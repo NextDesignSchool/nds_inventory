@@ -59,6 +59,52 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
+    /* ── Loading Screen ── */
+    #loadingScreen {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px;
+      transition: opacity .4s;
+    }
+    #loadingScreen.hidden { opacity: 0; pointer-events: none; }
+    .loading-logo {
+      background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
+      color: #fff;
+      font-weight: 600;
+      font-size: 20px;
+      letter-spacing: 2px;
+      padding: 10px 22px;
+      border-radius: 12px;
+    }
+    .loading-text {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .loading-spinner {
+      width: 28px; height: 28px;
+      border: 2px solid var(--border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Sync indicator ── */
+    .sync-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green);
+      display: inline-block;
+      margin-right: 5px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .sync-dot.offline { background: var(--orange); animation: none; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+
     /* ── Header ── */
     .header {
       position: fixed; top: 0; left: 0; right: 0; z-index: 200;
@@ -94,6 +140,17 @@
       padding: 5px 13px;
       border-radius: 20px;
       white-space: nowrap;
+    }
+    .sync-badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 13px;
+      border-radius: 20px;
+      white-space: nowrap;
+      display: flex; align-items: center;
     }
     .theme-btn {
       width: 36px; height: 36px;
@@ -510,6 +567,15 @@
 <body>
 
 <!-- ══════════════════════════════
+     LOADING SCREEN
+══════════════════════════════ -->
+<div id="loadingScreen">
+  <div class="loading-logo">NDS</div>
+  <div class="loading-spinner"></div>
+  <div class="loading-text">데이터 불러오는 중...</div>
+</div>
+
+<!-- ══════════════════════════════
      HEADER
 ══════════════════════════════ -->
 <header class="header">
@@ -522,6 +588,7 @@
   </div>
   <div class="header-right">
     <span class="date-badge" id="dateBadge"></span>
+    <span class="sync-badge" id="syncBadge"><span class="sync-dot" id="syncDot"></span><span id="syncText">실시간 연동 중</span></span>
     <button class="theme-btn" id="themeBtn" title="테마 전환">☀️</button>
     <span class="count-badge" id="countBadge">0개 상품</span>
     <button class="btn btn-secondary" onclick="openAddProduct()">+ 상품 추가</button>
@@ -786,67 +853,180 @@
 
 
 <!-- ══════════════════════════════
-     SCRIPT
+     FIREBASE SDK
 ══════════════════════════════ -->
-<script>
-/* ─── Storage Keys ─── */
-const SK = {
-  products:'nds_products',
-  txns:'nds_txns',
-  cats:'nds_cats',
-  theme:'nds_theme'
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  doc,
+  onSnapshot,
+  addDoc,
+  setDoc,
+  deleteDoc,
+  writeBatch,
+  query,
+  orderBy,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ── Firebase Config ── */
+const firebaseConfig = {
+  apiKey: "AIzaSyCkOPSsoW-Oy5cHlNxgyFomNhW0T0Pvs98",
+  authDomain: "nds-inventory.firebaseapp.com",
+  projectId: "nds-inventory",
+  storageBucket: "nds-inventory.firebasestorage.app",
+  messagingSenderId: "786786130133",
+  appId: "1:786786130133:web:8a89506b07e6c6d7cb6a5c"
 };
 
-/* ─── State ─── */
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+/* ── Collections ── */
+const colProducts = collection(db, 'products');
+const colTxns     = collection(db, 'txns');
+const colCats     = collection(db, 'cats');
+
+/* ── State ── */
 let products = [];
-let txns = [];
-let cats = [];
-let theme = 'dark';
-let txType = 'in';
+let txns     = [];
+let cats     = [];
+let theme    = localStorage.getItem('nds_theme') || 'dark';
+let txType   = 'in';
 let quickProductId = null;
-let quickType = 'in';
-let detailId = null;
+let quickType      = 'in';
+let detailId       = null;
+let loaded = { products: false, txns: false, cats: false };
 
-/* ─── Init ─── */
-function init() {
-  load();
-  renderDate();
+/* ── Sync status ── */
+function setSyncStatus(online) {
+  const dot  = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  if (online) {
+    dot.className  = 'sync-dot';
+    text.textContent = '실시간 연동 중';
+  } else {
+    dot.className  = 'sync-dot offline';
+    text.textContent = '연결 끊김';
+  }
+}
+
+/* ── Hide loading when all 3 listeners fire ── */
+function checkLoaded() {
+  if (loaded.products && loaded.txns && loaded.cats) {
+    const ls = document.getElementById('loadingScreen');
+    ls.classList.add('hidden');
+    setTimeout(() => ls.style.display = 'none', 450);
+    renderAll();
+  }
+}
+
+/* ── Real-time Listeners ── */
+onSnapshot(query(colProducts, orderBy('createdAt')), snap => {
+  products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  loaded.products = true;
+  checkLoaded();
   renderAll();
-  bindEnterKeys();
+  setSyncStatus(true);
+}, () => setSyncStatus(false));
+
+onSnapshot(query(colTxns, orderBy('createdAt')), snap => {
+  txns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  loaded.txns = true;
+  checkLoaded();
+  renderAll();
+}, () => setSyncStatus(false));
+
+onSnapshot(colCats, snap => {
+  if (snap.docs.length === 0) {
+    // 첫 실행: 기본 카테고리 생성
+    const defaults = ['액세서리','주변기기','가구','기타'];
+    defaults.forEach(name => addDoc(colCats, { name, createdAt: serverTimestamp() }));
+  } else {
+    cats = snap.docs.map(d => ({ id: d.id, name: d.data().name }));
+  }
+  loaded.cats = true;
+  checkLoaded();
+  renderAll();
+}, () => setSyncStatus(false));
+
+/* ── Theme ── */
+function applyTheme(save_) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+  if (save_) localStorage.setItem('nds_theme', theme);
+}
+applyTheme(false);
+document.getElementById('themeBtn').addEventListener('click', () => {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  applyTheme(true);
+});
+
+/* ── Helpers ── */
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function today() { return new Date().toISOString().split('T')[0]; }
+
+function getStock(pid) {
+  const p = products.find(x => x.id === pid);
+  if (!p) return 0;
+  return (p.initialStock || 0)
+    + txns.filter(t => t.productId === pid && t.type === 'in').reduce((s,t)  => s+t.qty, 0)
+    - txns.filter(t => t.productId === pid && t.type === 'out').reduce((s,t) => s+t.qty, 0);
+}
+function getTotalIn(pid)  { return txns.filter(t => t.productId===pid && t.type==='in').reduce((s,t)  => s+t.qty, 0); }
+function getTotalOut(pid) { return txns.filter(t => t.productId===pid && t.type==='out').reduce((s,t) => s+t.qty, 0); }
+
+function catColorClass(name) {
+  const palette = ['tag-blue','tag-purple','tag-green','tag-brown'];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
+  return palette[Math.abs(h) % palette.length];
+}
+function catTag(c) { return `<span class="tag ${catColorClass(c)}">${escHtml(c)}</span>`; }
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) { return String(s).replace(/'/g,"\\'"); }
+function fmtDate(str) {
+  const d = new Date(str + 'T00:00:00');
+  return d.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+}
+function fmtMonth(str) {
+  const [y,m] = str.split('-');
+  return `${y}년 ${parseInt(m)}월`;
 }
 
-function load() {
-  try {
-    products = JSON.parse(localStorage.getItem(SK.products) || '[]');
-    txns     = JSON.parse(localStorage.getItem(SK.txns)     || '[]');
-    cats     = JSON.parse(localStorage.getItem(SK.cats)     || '[]');
-    theme    = localStorage.getItem(SK.theme) || 'dark';
-  } catch(e) { products=[]; txns=[]; cats=[]; }
-  if (!cats.length) cats = ['액세서리','주변기기','가구','기타'];
-  applyTheme(false);
+/* ── Toast ── */
+function toast(msg, type='ok') {
+  const wrap = document.getElementById('toastWrap');
+  const el   = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => {
+    el.style.animation = 'toastOut .25s ease forwards';
+    setTimeout(() => el.remove(), 260);
+  }, 3000);
 }
 
-function save() {
-  localStorage.setItem(SK.products, JSON.stringify(products));
-  localStorage.setItem(SK.txns,     JSON.stringify(txns));
-  localStorage.setItem(SK.cats,     JSON.stringify(cats));
-}
+/* ── Modal Helpers ── */
+function openOv(id)  { document.getElementById(id).classList.add('open'); }
+function closeOv(id) { document.getElementById(id).classList.remove('open'); }
+window.ovClick = (e, id) => { if (e.target === document.getElementById(id)) closeOv(id); };
+window.closeOv = closeOv;
 
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+/* ── Date Badge ── */
+function renderDate() {
+  const now = new Date();
+  document.getElementById('dateBadge').textContent =
+    now.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
 }
+renderDate();
 
-function today() {
-  return new Date().toISOString().split('T')[0];
-}
-
-function bindEnterKeys() {
-  document.getElementById('ap-name').addEventListener('keydown',   e => { if(e.key==='Enter') submitAddProduct(); });
-  document.getElementById('tx-note').addEventListener('keydown',   e => { if(e.key==='Enter') submitTx(); });
-  document.getElementById('quick-note').addEventListener('keydown',e => { if(e.key==='Enter') submitQuick(); });
-}
-
-/* ─── Render All ─── */
+/* ── Render All ── */
 function renderAll() {
   renderInv();
   renderDaily();
@@ -855,35 +1035,7 @@ function renderAll() {
   document.getElementById('countBadge').textContent = products.length + '개 상품';
 }
 
-function renderDate() {
-  const now = new Date();
-  document.getElementById('dateBadge').textContent =
-    now.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
-}
-
-/* ─── Stock Calc ─── */
-function getStock(pid) {
-  const p = products.find(x => x.id === pid);
-  if (!p) return 0;
-  return (p.initialStock || 0)
-    + txns.filter(t => t.productId === pid && t.type === 'in').reduce((s,t) => s+t.qty, 0)
-    - txns.filter(t => t.productId === pid && t.type === 'out').reduce((s,t) => s+t.qty, 0);
-}
-function getTotalIn(pid)  { return txns.filter(t => t.productId===pid && t.type==='in').reduce((s,t) => s+t.qty, 0); }
-function getTotalOut(pid) { return txns.filter(t => t.productId===pid && t.type==='out').reduce((s,t) => s+t.qty, 0); }
-
-/* ─── Category Tag ─── */
-function catColorClass(name) {
-  const palette = ['tag-blue','tag-purple','tag-green','tag-brown'];
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
-  return palette[Math.abs(h) % palette.length];
-}
-function catTag(c) {
-  return `<span class="tag ${catColorClass(c)}">${escHtml(c)}</span>`;
-}
-
-/* ─── Inventory Table ─── */
+/* ── Inventory Table ── */
 function renderInv() {
   const tbody = document.getElementById('invBody');
   if (!products.length) {
@@ -901,9 +1053,7 @@ function renderInv() {
     return `<tr>
       <td><span class="product-link" onclick="openDetail('${p.id}')">${escHtml(p.name)}</span></td>
       <td>${catTag(p.category)}</td>
-      <td>
-        <div class="stock-num ${numCls}">${st.toLocaleString()}</div>
-      </td>
+      <td><div class="stock-num ${numCls}">${st.toLocaleString()}</div></td>
       <td>
         <div style="display:flex;gap:6px;">
           <button class="btn-in"  onclick="openQuick('${p.id}','in')">▲ 입고</button>
@@ -914,7 +1064,7 @@ function renderInv() {
   }).join('');
 }
 
-/* ─── Daily Stats ─── */
+/* ── Daily Stats ── */
 function renderDaily() {
   const el = document.getElementById('dailyContent');
   if (!txns.length) {
@@ -949,7 +1099,7 @@ function renderDaily() {
   }).join('');
 }
 
-/* ─── Monthly Stats ─── */
+/* ── Monthly Stats ── */
 function renderMonthly() {
   const el = document.getElementById('monthlyContent');
   if (!txns.length) {
@@ -965,7 +1115,6 @@ function renderMonthly() {
   });
   const sortedDesc = Object.keys(monthly).sort((a,b) => b.localeCompare(a));
   const sortedAsc  = [...sortedDesc].reverse();
-
   const tableRows = sortedDesc.map(m => {
     const d = monthly[m];
     const net = d.in - d.out;
@@ -978,7 +1127,6 @@ function renderMonthly() {
       <td class="num" style="color:var(--text-muted);">${d.cnt}</td>
     </tr>`;
   }).join('');
-
   const maxV = Math.max(...Object.values(monthly).map(d => Math.max(d.in, d.out)), 1);
   const bars = sortedAsc.map(m => {
     const d = monthly[m];
@@ -986,16 +1134,13 @@ function renderMonthly() {
     const oh = Math.round((d.out / maxV) * 140);
     const lb = m.slice(5).replace(/^0/,'');
     return `<div class="bar-group">
-      <div class="bar-col">
-        <div class="bar bar-in-color"  style="height:${ih}px;" title="입고 ${d.in.toLocaleString()}"></div>
-      </div>
+      <div class="bar-col"><div class="bar bar-in-color"  style="height:${ih}px;" title="입고 ${d.in.toLocaleString()}"></div></div>
       <div class="bar-col">
         <div class="bar bar-out-color" style="height:${oh}px;" title="출고 ${d.out.toLocaleString()}"></div>
         <div class="bar-month">${lb}월</div>
       </div>
     </div>`;
   }).join('');
-
   el.innerHTML = `
     <table class="stats-tbl">
       <thead><tr><th>월</th><th>총 입고</th><th>총 출고</th><th>순증감</th><th>처리건수</th></tr></thead>
@@ -1011,7 +1156,7 @@ function renderMonthly() {
   `;
 }
 
-/* ─── Summary Panel ─── */
+/* ── Summary ── */
 function renderSummary() {
   const el = document.getElementById('summaryContent');
   const totalProd  = products.length;
@@ -1019,25 +1164,12 @@ function renderSummary() {
   const totalIn    = txns.filter(t=>t.type==='in').reduce((s,t)=>s+t.qty,0);
   const totalOut   = txns.filter(t=>t.type==='out').reduce((s,t)=>s+t.qty,0);
   const zeroCount  = products.filter(p => getStock(p.id) === 0).length;
-
   el.innerHTML = `
     <div class="summary-grid">
-      <div class="sum-card">
-        <div class="sum-card-label">총 상품 수</div>
-        <div class="sum-card-val">${totalProd}</div>
-      </div>
-      <div class="sum-card">
-        <div class="sum-card-label">총 재고</div>
-        <div class="sum-card-val">${totalStock.toLocaleString()}</div>
-      </div>
-      <div class="sum-card">
-        <div class="sum-card-label">누적 입고</div>
-        <div class="sum-card-val" style="color:var(--green);">${totalIn.toLocaleString()}</div>
-      </div>
-      <div class="sum-card">
-        <div class="sum-card-label">누적 출고</div>
-        <div class="sum-card-val" style="color:var(--red);">${totalOut.toLocaleString()}</div>
-      </div>
+      <div class="sum-card"><div class="sum-card-label">총 상품 수</div><div class="sum-card-val">${totalProd}</div></div>
+      <div class="sum-card"><div class="sum-card-label">총 재고</div><div class="sum-card-val">${totalStock.toLocaleString()}</div></div>
+      <div class="sum-card"><div class="sum-card-label">누적 입고</div><div class="sum-card-val" style="color:var(--green);">${totalIn.toLocaleString()}</div></div>
+      <div class="sum-card"><div class="sum-card-label">누적 출고</div><div class="sum-card-val" style="color:var(--red);">${totalOut.toLocaleString()}</div></div>
     </div>
     ${zeroCount > 0
       ? `<div style="padding:10px 14px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:9px;font-size:13px;color:var(--red);">⚠️ 재고 없음: ${zeroCount}개 상품</div>`
@@ -1046,44 +1178,48 @@ function renderSummary() {
   `;
 }
 
-/* ─── Tabs ─── */
-function switchTab(tab) {
+/* ── Tabs ── */
+window.switchTab = (tab) => {
   ['daily','monthly'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('panel-'+t).classList.toggle('active', t===tab);
   });
-}
+};
 
-/* ─── Modal Helpers ─── */
-function openOv(id) { document.getElementById(id).classList.add('open'); }
-function closeOv(id){ document.getElementById(id).classList.remove('open'); }
-function ovClick(e, id) { if (e.target === document.getElementById(id)) closeOv(id); }
+/* ── Qty Helpers ── */
+window.adjQty = (id, delta) => {
+  const el = document.getElementById(id);
+  el.value = Math.max(1, (parseInt(el.value) || 0) + delta);
+};
+window.setQtyVal = (id, v) => { document.getElementById(id).value = v; };
 
-/* ─── Add Product ─── */
-function openAddProduct() {
-  document.getElementById('ap-name').value = '';
+/* ── Add Product ── */
+window.openAddProduct = () => {
+  document.getElementById('ap-name').value  = '';
   document.getElementById('ap-stock').value = '0';
   const sel = document.getElementById('ap-cat');
-  sel.innerHTML = cats.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+  sel.innerHTML = cats.map(c => `<option value="${escHtml(c.name)}">${escHtml(c.name)}</option>`).join('');
   openOv('ov-addProduct');
   setTimeout(() => document.getElementById('ap-name').focus(), 120);
-}
+};
 
-function submitAddProduct() {
+window.submitAddProduct = async () => {
   const name  = document.getElementById('ap-name').value.trim();
   const cat   = document.getElementById('ap-cat').value;
   const stock = Math.max(0, parseInt(document.getElementById('ap-stock').value) || 0);
   if (!name) { toast('상품명을 입력하세요.','err'); return; }
   if (products.find(p => p.name === name)) { toast('이미 존재하는 상품명입니다.','err'); return; }
-  products.push({ id: uid(), name, category: cat, initialStock: stock });
-  save();
-  closeOv('ov-addProduct');
-  renderAll();
-  toast(`"${name}" 상품이 추가되었습니다.`,'ok');
-}
+  try {
+    await addDoc(colProducts, { name, category: cat, initialStock: stock, createdAt: serverTimestamp() });
+    closeOv('ov-addProduct');
+    toast(`"${name}" 상품이 추가되었습니다.`,'ok');
+  } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+};
 
-/* ─── Add Transaction ─── */
-function openAddTx() {
+document.getElementById('ap-name').addEventListener('keydown', e => { if(e.key==='Enter') window.submitAddProduct(); });
+
+/* ── Add Transaction ── */
+window.openAddTx = () => {
   if (!products.length) { toast('먼저 상품을 추가해주세요.','err'); return; }
   const sel = document.getElementById('tx-product');
   sel.innerHTML = products.map(p => `<option value="${p.id}">${escHtml(p.name)}</option>`).join('');
@@ -1092,38 +1228,41 @@ function openAddTx() {
   document.getElementById('tx-note').value = '';
   setTxType('in');
   openOv('ov-addTx');
-}
+};
 
 function setTxType(t) {
   txType = t;
   document.getElementById('tx-in').className  = 'type-btn' + (t==='in'  ? ' active-in'  : '');
   document.getElementById('tx-out').className = 'type-btn' + (t==='out' ? ' active-out' : '');
 }
+window.setTxType = setTxType;
 
-function submitTx() {
+window.submitTx = async () => {
   const pid  = document.getElementById('tx-product').value;
   const qty  = parseInt(document.getElementById('tx-qty').value) || 0;
   const date = document.getElementById('tx-date').value;
   const note = document.getElementById('tx-note').value.trim();
-  if (!pid)   { toast('상품을 선택하세요.','err'); return; }
-  if (qty < 1){ toast('수량은 1 이상이어야 합니다.','err'); return; }
-  if (!date)  { toast('날짜를 입력하세요.','err'); return; }
-  txns.push({ id:uid(), productId:pid, type:txType, qty, date, note });
-  save();
-  closeOv('ov-addTx');
-  renderAll();
-  const p = products.find(x => x.id === pid);
-  toast(`${escHtml(p.name)} ${txType==='in'?'입고':'출고'} ${qty.toLocaleString()}개 등록 완료!`,'ok');
-}
+  if (!pid)    { toast('상품을 선택하세요.','err'); return; }
+  if (qty < 1) { toast('수량은 1 이상이어야 합니다.','err'); return; }
+  if (!date)   { toast('날짜를 입력하세요.','err'); return; }
+  try {
+    await addDoc(colTxns, { productId: pid, type: txType, qty, date, note, createdAt: serverTimestamp() });
+    closeOv('ov-addTx');
+    const p = products.find(x => x.id === pid);
+    toast(`${escHtml(p.name)} ${txType==='in'?'입고':'출고'} ${qty.toLocaleString()}개 등록 완료!`,'ok');
+  } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+};
 
-/* ─── Quick Popup ─── */
-function openQuick(pid, type) {
+document.getElementById('tx-note').addEventListener('keydown', e => { if(e.key==='Enter') window.submitTx(); });
+
+/* ── Quick Popup ── */
+window.openQuick = (pid, type) => {
   quickProductId = pid;
   quickType = type;
   const p  = products.find(x => x.id === pid);
   const st = getStock(pid);
   const isIn = type === 'in';
-  document.getElementById('quick-title').textContent       = isIn ? '▲ 입고' : '▼ 출고';
+  document.getElementById('quick-title').textContent        = isIn ? '▲ 입고' : '▼ 출고';
   document.getElementById('quick-product-name').textContent = p.name;
   document.getElementById('quick-stock').textContent        = st.toLocaleString();
   document.getElementById('quick-qty').value  = '1';
@@ -1135,56 +1274,44 @@ function openQuick(pid, type) {
     ? 'width:100%;padding:12px;font-size:14px;margin-top:4px;border-radius:11px;background:rgba(52,211,153,.18);color:var(--green);border:1px solid rgba(52,211,153,.35);font-weight:600;cursor:pointer;'
     : 'width:100%;padding:12px;font-size:14px;margin-top:4px;border-radius:11px;background:rgba(248,113,113,.18);color:var(--red);border:1px solid rgba(248,113,113,.35);font-weight:600;cursor:pointer;';
   openOv('ov-quick');
-}
+};
 
-function submitQuick() {
+window.submitQuick = async () => {
   const qty  = parseInt(document.getElementById('quick-qty').value) || 0;
   const date = document.getElementById('quick-date').value;
   const note = document.getElementById('quick-note').value.trim();
-  if (qty < 1)  { toast('수량은 1 이상이어야 합니다.','err'); return; }
-  if (!date)    { toast('날짜를 입력하세요.','err'); return; }
-  txns.push({ id:uid(), productId:quickProductId, type:quickType, qty, date, note });
-  save();
-  closeOv('ov-quick');
-  renderAll();
-  const p = products.find(x => x.id === quickProductId);
-  toast(`${escHtml(p.name)} ${quickType==='in'?'입고':'출고'} ${qty.toLocaleString()}개 등록 완료!`,'ok');
-}
+  if (qty < 1) { toast('수량은 1 이상이어야 합니다.','err'); return; }
+  if (!date)   { toast('날짜를 입력하세요.','err'); return; }
+  try {
+    await addDoc(colTxns, { productId: quickProductId, type: quickType, qty, date, note, createdAt: serverTimestamp() });
+    closeOv('ov-quick');
+    const p = products.find(x => x.id === quickProductId);
+    toast(`${escHtml(p.name)} ${quickType==='in'?'입고':'출고'} ${qty.toLocaleString()}개 등록 완료!`,'ok');
+  } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+};
 
-/* ─── Product Detail ─── */
-function openDetail(pid) {
+document.getElementById('quick-note').addEventListener('keydown', e => { if(e.key==='Enter') window.submitQuick(); });
+
+/* ── Product Detail ── */
+window.openDetail = (pid) => {
   detailId = pid;
-  const p  = products.find(x => x.id === pid);
+  const p = products.find(x => x.id === pid);
   if (!p) return;
   const pTxns = txns.filter(t => t.productId === pid);
   const st    = getStock(pid);
   const tin   = getTotalIn(pid);
   const tout  = getTotalOut(pid);
-
   document.getElementById('det-name').textContent = p.name;
   document.getElementById('det-meta').textContent = `${p.category} · 총 ${pTxns.length}건`;
-
   document.getElementById('det-cards').innerHTML = `
-    <div class="sum-card">
-      <div class="sum-card-label">현재 재고</div>
-      <div class="sum-card-val">${st.toLocaleString()}</div>
-    </div>
-    <div class="sum-card">
-      <div class="sum-card-label">누적 입고</div>
-      <div class="sum-card-val" style="color:var(--green);">${tin.toLocaleString()}</div>
-    </div>
-    <div class="sum-card">
-      <div class="sum-card-label">누적 출고</div>
-      <div class="sum-card-val" style="color:var(--red);">${tout.toLocaleString()}</div>
-    </div>
+    <div class="sum-card"><div class="sum-card-label">현재 재고</div><div class="sum-card-val">${st.toLocaleString()}</div></div>
+    <div class="sum-card"><div class="sum-card-label">누적 입고</div><div class="sum-card-val" style="color:var(--green);">${tin.toLocaleString()}</div></div>
+    <div class="sum-card"><div class="sum-card-label">누적 출고</div><div class="sum-card-val" style="color:var(--red);">${tout.toLocaleString()}</div></div>
   `;
-
   const sorted = [...pTxns].sort((a,b) => b.date.localeCompare(a.date));
   document.getElementById('det-body').innerHTML = sorted.length
     ? sorted.map(t => {
-        const badge = t.type==='in'
-          ? '<span class="badge-in">입고</span>'
-          : '<span class="badge-out">출고</span>';
+        const badge = t.type==='in' ? '<span class="badge-in">입고</span>' : '<span class="badge-out">출고</span>';
         const vc = t.type==='in' ? 'color:var(--green)' : 'color:var(--red)';
         return `<tr>
           <td class="num" style="font-size:13px;">${t.date}</td>
@@ -1194,31 +1321,31 @@ function openDetail(pid) {
         </tr>`;
       }).join('')
     : `<tr><td colspan="4"><div class="empty"><div class="empty-text">입출고 기록이 없습니다</div></div></td></tr>`;
-
   openOv('ov-detail');
-}
+};
 
-/* ─── Delete from Detail ─── */
-function deleteFromDetail() {
+window.deleteFromDetail = async () => {
   if (!detailId) return;
   const p = products.find(x => x.id === detailId);
   if (!p) return;
   if (!confirm(`"${p.name}" 상품을 삭제하시겠습니까?\n관련 입출고 기록도 함께 삭제됩니다.`)) return;
-  products = products.filter(x => x.id !== detailId);
-  txns     = txns.filter(t => t.productId !== detailId);
-  save();
-  closeOv('ov-detail');
-  renderAll();
-  toast(`"${escHtml(p.name)}" 상품 삭제됨`,'ok');
-}
+  try {
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'products', detailId));
+    txns.filter(t => t.productId === detailId).forEach(t => batch.delete(doc(db, 'txns', t.id)));
+    await batch.commit();
+    closeOv('ov-detail');
+    toast(`"${escHtml(p.name)}" 상품 삭제됨`,'ok');
+  } catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
+};
 
-/* ─── Category Manager ─── */
-function openCatMgr() {
+/* ── Category Manager ── */
+window.openCatMgr = () => {
   document.getElementById('cat-new').value = '';
   renderCatList();
   openOv('ov-catMgr');
   setTimeout(() => document.getElementById('cat-new').focus(), 120);
-}
+};
 
 function renderCatList() {
   const el = document.getElementById('catList');
@@ -1228,59 +1355,56 @@ function renderCatList() {
   }
   el.innerHTML = cats.map(c => `
     <div class="mgr-item">
-      ${catTag(c)}
-      <button class="mgr-del" onclick="deleteCat('${escAttr(c)}')">✕</button>
+      ${catTag(c.name)}
+      <button class="mgr-del" onclick="deleteCat('${escAttr(c.id)}','${escAttr(c.name)}')">✕</button>
     </div>
   `).join('');
 }
 
-function addCat() {
+window.addCat = async () => {
   const name = document.getElementById('cat-new').value.trim();
   if (!name) { toast('카테고리 이름을 입력하세요.','err'); return; }
-  if (cats.includes(name)) { toast('이미 존재하는 카테고리입니다.','err'); return; }
-  cats.push(name);
-  save();
-  renderCatList();
-  document.getElementById('cat-new').value = '';
-  toast(`"${name}" 카테고리가 추가되었습니다.`,'ok');
-}
+  if (cats.find(c => c.name === name)) { toast('이미 존재하는 카테고리입니다.','err'); return; }
+  try {
+    await addDoc(colCats, { name, createdAt: serverTimestamp() });
+    document.getElementById('cat-new').value = '';
+    toast(`"${name}" 카테고리가 추가되었습니다.`,'ok');
+  } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+};
 
-function deleteCat(name) {
-  if (products.find(p => p.category === name)) {
-    toast('사용 중인 카테고리는 삭제할 수 없습니다.','err');
-    return;
-  }
-  cats = cats.filter(c => c !== name);
-  save();
-  renderCatList();
-  toast(`"${name}" 카테고리 삭제됨`,'ok');
-}
+window.deleteCat = async (id, name) => {
+  if (products.find(p => p.category === name)) { toast('사용 중인 카테고리는 삭제할 수 없습니다.','err'); return; }
+  try {
+    await deleteDoc(doc(db, 'cats', id));
+    toast(`"${name}" 카테고리 삭제됨`,'ok');
+  } catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
+};
 
-/* ─── Product Manager ─── */
-function openProductMgr() {
+/* ── Product Manager ── */
+window.openProductMgr = () => {
   document.getElementById('pmgr-name').value  = '';
   document.getElementById('pmgr-stock').value = '0';
   const sel = document.getElementById('pmgr-cat');
-  sel.innerHTML = cats.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+  sel.innerHTML = cats.map(c => `<option value="${escHtml(c.name)}">${escHtml(c.name)}</option>`).join('');
   renderProductMgrList();
   openOv('ov-productMgr');
   setTimeout(() => document.getElementById('pmgr-name').focus(), 120);
-}
+};
 
-function submitAddFromMgr() {
+window.submitAddFromMgr = async () => {
   const name  = document.getElementById('pmgr-name').value.trim();
   const cat   = document.getElementById('pmgr-cat').value;
   const stock = Math.max(0, parseInt(document.getElementById('pmgr-stock').value) || 0);
   if (!name) { toast('상품명을 입력하세요.','err'); return; }
   if (products.find(p => p.name === name)) { toast('이미 존재하는 상품명입니다.','err'); return; }
-  products.push({ id: uid(), name, category: cat, initialStock: stock });
-  save();
-  document.getElementById('pmgr-name').value  = '';
-  document.getElementById('pmgr-stock').value = '0';
-  renderProductMgrList();
-  renderAll();
-  toast(`"${name}" 상품이 추가되었습니다.`,'ok');
-}
+  try {
+    await addDoc(colProducts, { name, category: cat, initialStock: stock, createdAt: serverTimestamp() });
+    document.getElementById('pmgr-name').value  = '';
+    document.getElementById('pmgr-stock').value = '0';
+    renderProductMgrList();
+    toast(`"${name}" 상품이 추가되었습니다.`,'ok');
+  } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+};
 
 function renderProductMgrList() {
   const el = document.getElementById('productMgrList');
@@ -1295,27 +1419,27 @@ function renderProductMgrList() {
         <div style="font-weight:500;">${escHtml(p.name)}</div>
         <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${escHtml(p.category)} · 재고 ${st.toLocaleString()}</div>
       </div>
-      <button class="mgr-del" onclick="deleteProduct('${p.id}')">✕</button>
+      <button class="mgr-del" onclick="deleteProduct('${p.id}','${escAttr(p.name)}')">✕</button>
     </div>`;
   }).join('');
 }
 
-function deleteProduct(id) {
-  const p = products.find(x => x.id === id);
-  if (!p) return;
-  if (!confirm(`"${p.name}" 상품을 삭제하시겠습니까?\n관련 입출고 기록도 함께 삭제됩니다.`)) return;
-  products = products.filter(x => x.id !== id);
-  txns     = txns.filter(t => t.productId !== id);
-  save();
-  renderProductMgrList();
-  renderAll();
-  toast(`"${escHtml(p.name)}" 상품 삭제됨`,'ok');
-}
+window.deleteProduct = async (id, name) => {
+  if (!confirm(`"${name}" 상품을 삭제하시겠습니까?\n관련 입출고 기록도 함께 삭제됩니다.`)) return;
+  try {
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'products', id));
+    txns.filter(t => t.productId === id).forEach(t => batch.delete(doc(db, 'txns', t.id)));
+    await batch.commit();
+    renderProductMgrList();
+    toast(`"${escHtml(name)}" 상품 삭제됨`,'ok');
+  } catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
+};
 
-/* ─── Excel Download (All Products) ─── */
-function openExcelModal() { openOv('ov-excel'); }
+/* ── Excel ── */
+window.openExcelModal = () => openOv('ov-excel');
 
-function doExcel() {
+window.doExcel = () => {
   const inc = {
     name:  document.getElementById('xl-name').checked,
     cat:   document.getElementById('xl-cat').checked,
@@ -1345,10 +1469,9 @@ function doExcel() {
   XLSX.writeFile(wb, 'NDS_재고현황.xlsx');
   closeOv('ov-excel');
   toast('엑셀 파일이 다운로드되었습니다.','ok');
-}
+};
 
-/* ─── Excel Download (Product Detail) ─── */
-function doProductExcel() {
+window.doProductExcel = () => {
   if (!detailId) return;
   const p = products.find(x => x.id === detailId);
   if (!p) return;
@@ -1360,60 +1483,8 @@ function doProductExcel() {
   XLSX.utils.book_append_sheet(wb, ws, '입출고내역');
   XLSX.writeFile(wb, `NDS_${p.name}_입출고내역.xlsx`);
   toast('엑셀 파일이 다운로드되었습니다.','ok');
-}
+};
 
-/* ─── Qty Helpers ─── */
-function adjQty(id, delta) {
-  const el = document.getElementById(id);
-  el.value = Math.max(1, (parseInt(el.value) || 0) + delta);
-}
-function setQtyVal(id, v) { document.getElementById(id).value = v; }
-
-/* ─── Theme ─── */
-function applyTheme(save_) {
-  document.documentElement.setAttribute('data-theme', theme);
-  document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
-  if (save_) localStorage.setItem(SK.theme, theme);
-}
-
-document.getElementById('themeBtn').addEventListener('click', () => {
-  theme = theme === 'dark' ? 'light' : 'dark';
-  applyTheme(true);
-});
-
-/* ─── Toast ─── */
-function toast(msg, type='ok') {
-  const wrap = document.getElementById('toastWrap');
-  const el   = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.textContent = msg;
-  wrap.appendChild(el);
-  setTimeout(() => {
-    el.style.animation = 'toastOut .25s ease forwards';
-    setTimeout(() => el.remove(), 260);
-  }, 3000);
-}
-
-/* ─── Escape Helpers ─── */
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function escAttr(s) {
-  return String(s).replace(/'/g,"\\'");
-}
-
-/* ─── Format ─── */
-function fmtDate(str) {
-  const d = new Date(str + 'T00:00:00');
-  return d.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
-}
-function fmtMonth(str) {
-  const [y,m] = str.split('-');
-  return `${y}년 ${parseInt(m)}월`;
-}
-
-/* ─── Start ─── */
-init();
 </script>
 </body>
 </html>
