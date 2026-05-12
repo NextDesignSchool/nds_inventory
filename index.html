@@ -270,6 +270,15 @@
     }
     .product-link:hover { color: var(--purple); text-decoration: underline; }
 
+    .tx-link {
+      color: var(--text);
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 1px dashed var(--text-dim);
+      transition: color .15s;
+    }
+    .tx-link:hover { color: var(--blue); border-bottom-color: var(--blue); }
+
     /* ── Stock Number ── */
     .stock-num {
       font-family: 'Pretendard', sans-serif;
@@ -521,7 +530,12 @@
     /* ── Sortable Column ── */
     .sortable-col { cursor: pointer; user-select: none; }
     .sortable-col:hover { background: var(--surface3) !important; }
-    .sort-indicator { font-size: 9px; margin-left: 3px; opacity: 0.8; }
+    .sort-indicator { font-size: 9px; margin-left: 3px; opacity: 0.35; }
+    .sort-indicator.active { opacity: 1; color: var(--blue); }
+
+    /* ── Detail Tx Row ── */
+    .det-tx-row { cursor: pointer; }
+    .det-tx-row:hover { background: var(--surface3) !important; }
 
     /* ── Empty State ── */
     .empty {
@@ -714,12 +728,12 @@
   <div class="modal modal-sm">
     <button class="modal-close" data-close="ov-quick">✕</button>
     <div class="modal-title" id="quick-title">입고</div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label class="form-label">상품</label>
+      <select class="form-select" id="quick-product-select"></select>
+    </div>
     <div class="stock-display">
       <div>
-        <div class="stock-display-label">상품</div>
-        <div style="font-weight:600;" id="quick-product-name">-</div>
-      </div>
-      <div style="text-align:right;">
         <div class="stock-display-label">현재 재고</div>
         <div class="stock-display-val" id="quick-stock">0</div>
       </div>
@@ -828,6 +842,53 @@
 </div>
 
 
+<!-- ⑧ 입출고 수정 -->
+<div class="overlay" id="ov-editTx">
+  <div class="modal">
+    <button class="modal-close" data-close="ov-editTx">✕</button>
+    <div class="modal-title">입출고 수정</div>
+    <div class="form-group">
+      <label class="form-label">상품</label>
+      <select class="form-select" id="edit-product"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">구분</label>
+      <div class="type-toggle">
+        <button class="type-btn active-in" id="edit-in">▲ 입고</button>
+        <button class="type-btn"           id="edit-out">▼ 출고</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">수량</label>
+      <div class="qty-row">
+        <button class="qty-btn" data-qty-target="edit-qty" data-qty-delta="-1">−</button>
+        <input class="form-input qty-input-big" id="edit-qty" type="number" min="1" value="1">
+        <button class="qty-btn" data-qty-target="edit-qty" data-qty-delta="1">+</button>
+      </div>
+      <div class="presets">
+        <button class="preset-btn" data-qty-target="edit-qty" data-qty-set="5">5</button>
+        <button class="preset-btn" data-qty-target="edit-qty" data-qty-set="10">10</button>
+        <button class="preset-btn" data-qty-target="edit-qty" data-qty-set="20">20</button>
+        <button class="preset-btn" data-qty-target="edit-qty" data-qty-set="50">50</button>
+        <button class="preset-btn" data-qty-target="edit-qty" data-qty-set="100">100</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">날짜</label>
+      <input class="form-input" id="edit-date" type="date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">내용</label>
+      <input class="form-input" id="edit-note" type="text" placeholder="내용 입력 (선택)">
+    </div>
+    <div style="display:flex;gap:9px;margin-top:20px;">
+      <button class="btn" id="btnDeleteTx" style="padding:8px 14px;background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.28);">삭제</button>
+      <button class="btn btn-secondary" style="flex:1" data-close="ov-editTx">취소</button>
+      <button class="btn btn-primary"   style="flex:2" id="btnSubmitEditTx">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════════════════════
      FIREBASE SDK
 ══════════════════════════════ -->
@@ -835,7 +896,7 @@
 import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, doc,
-  onSnapshot, addDoc, deleteDoc, writeBatch,
+  onSnapshot, addDoc, deleteDoc, updateDoc, writeBatch,
   query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -861,6 +922,8 @@ let txType   = 'in';
 let quickProductId = null, quickType = 'in', detailId = null;
 let loaded = { products: false, txns: false, cats: false };
 let catsInitialized = false;
+let editTxId = null;
+let editTxType = 'in';
 let invSortKey = null; // 'name' | 'category' | null
 let invSortDir = 'asc';
 
@@ -924,6 +987,12 @@ const refreshCatSelects = () => {
   $('pmgr-cat').innerHTML = buildCatOptions();
 };
 
+function updateSortIndicators() {
+  const siName = $('si-name'), siCat = $('si-cat');
+  if (siName) { siName.textContent = invSortKey==='name' ? (invSortDir==='asc'?'▲':'▼') : '↕'; siName.className = 'sort-indicator'+(invSortKey==='name'?' active':''); }
+  if (siCat)  { siCat.textContent  = invSortKey==='category' ? (invSortDir==='asc'?'▲':'▼') : '↕'; siCat.className  = 'sort-indicator'+(invSortKey==='category'?' active':''); }
+}
+
 /* ══════════════════════
    RENDER
 ══════════════════════ */
@@ -940,7 +1009,7 @@ function renderInv() {
       <div class="empty-text">등록된 상품이 없습니다</div>
       <div class="empty-sub">우측 상단의 [+ 상품 추가] 버튼을 눌러 시작하세요</div>
     </div></td></tr>`;
-    ['name','cat'].forEach(k => { const el=$('si-'+k); if(el) el.textContent=''; });
+    updateSortIndicators();
     return;
   }
   let displayProducts = [...products];
@@ -952,9 +1021,7 @@ function renderInv() {
       return invSortDir === 'asc' ? cmp : -cmp;
     });
   }
-  const siName = $('si-name'), siCat = $('si-cat');
-  if (siName) siName.textContent = invSortKey==='name'     ? (invSortDir==='asc'?'▲':'▼') : '';
-  if (siCat)  siCat.textContent  = invSortKey==='category' ? (invSortDir==='asc'?'▲':'▼') : '';
+  updateSortIndicators();
   tbody.innerHTML = displayProducts.map(p => {
     const st = getStock(p.id);
     const nc = st===0?'stock-zero':st<=5?'stock-low':'';
@@ -981,7 +1048,7 @@ function renderDaily() {
       const badge = t.type==='in'?'<span class="badge-in">입고</span>':'<span class="badge-out">출고</span>';
       const vc    = t.type==='in'?'color:var(--green)':'color:var(--red)';
       return `<tr>
-        <td style="font-size:13px;">${esc(pName)}</td><td>${badge}</td>
+        <td style="font-size:13px;"><span class="tx-link" data-txid="${t.id}">${esc(pName)}</span></td><td>${badge}</td>
         <td class="num" style="${vc};font-weight:500;">${t.type==='in'?'+':'-'}${t.qty.toLocaleString()}</td>
         <td style="font-size:12px;color:var(--text-muted);">${esc(t.note||'-')}</td>
       </tr>`;
@@ -1089,7 +1156,7 @@ function refreshDetail() {
     ? sorted.map(t=>{
         const badge=t.type==='in'?'<span class="badge-in">입고</span>':'<span class="badge-out">출고</span>';
         const vc=t.type==='in'?'color:var(--green)':'color:var(--red)';
-        return `<tr>
+        return `<tr class="det-tx-row" data-txid="${t.id}">
           <td class="num" style="font-size:13px;">${t.date}</td><td>${badge}</td>
           <td class="num" style="${vc};font-weight:500;">${t.type==='in'?'+':'-'}${t.qty.toLocaleString()}</td>
           <td style="font-size:13px;color:var(--text-muted);">${esc(t.note||'-')}</td>
@@ -1251,11 +1318,12 @@ document.addEventListener('click', e => {
   const btn = e.target.closest('[data-qtype]');
   if (!btn) return;
   const pid=btn.dataset.pid, type=btn.dataset.qtype;
-  quickProductId=pid; quickType=type;
-  const p=products.find(x=>x.id===pid), st=getStock(pid), isIn=type==='in';
-  $('quick-title').textContent        = isIn?'▲ 입고':'▼ 출고';
-  $('quick-product-name').textContent = p.name;
-  $('quick-stock').textContent        = st.toLocaleString();
+  quickType=type;
+  const isIn=type==='in';
+  $('quick-title').textContent = isIn?'▲ 입고':'▼ 출고';
+  $('quick-product-select').innerHTML = products.map(p=>`<option value="${p.id}"${p.id===pid?' selected':''}>${esc(p.name)}</option>`).join('');
+  quickProductId=pid;
+  $('quick-stock').textContent = getStock(pid).toLocaleString();
   $('quick-qty').value='1'; $('quick-date').value=today(); $('quick-note').value='';
   const submitBtn=$('quick-submit-btn');
   submitBtn.textContent = isIn?'▲ 입고 등록':'▼ 출고 등록';
@@ -1264,16 +1332,21 @@ document.addEventListener('click', e => {
     :'width:100%;padding:12px;font-size:14px;margin-top:4px;border-radius:11px;background:rgba(248,113,113,.18);color:var(--red);border:1px solid rgba(248,113,113,.35);font-weight:600;cursor:pointer;';
   openOv('ov-quick');
 });
+$('quick-product-select').addEventListener('change', () => {
+  quickProductId = $('quick-product-select').value;
+  $('quick-stock').textContent = getStock(quickProductId).toLocaleString();
+});
 $('quick-submit-btn').addEventListener('click', submitQuick);
 $('quick-note').addEventListener('keydown', e=>{ if(e.key==='Enter') submitQuick(); });
 async function submitQuick() {
+  const pid=$('quick-product-select').value;
   const qty=parseInt($('quick-qty').value)||0, date=$('quick-date').value, note=($('quick-note').value||'').trim();
   if (qty<1)  { toast('수량은 1 이상이어야 합니다.','err'); return; }
   if (!date)  { toast('날짜를 입력하세요.','err'); return; }
   try {
-    await addDoc(colTxns,{productId:quickProductId,type:quickType,qty,date,note,createdAt:serverTimestamp()});
+    await addDoc(colTxns,{productId:pid,type:quickType,qty,date,note,createdAt:serverTimestamp()});
     closeOv('ov-quick');
-    const p=products.find(x=>x.id===quickProductId);
+    const p=products.find(x=>x.id===pid);
     toast(`${esc(p.name)} ${quickType==='in'?'입고':'출고'} ${qty.toLocaleString()}개 등록 완료!`,'ok');
   } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
 }
@@ -1284,6 +1357,57 @@ document.addEventListener('click', e => {
   if (!link) return;
   detailId = link.dataset.pid;
   refreshDetail(); openOv('ov-detail');
+});
+
+/* 입출고 기록 클릭 → 수정 (날짜별 현황 + 상품 상세 모달 공통) */
+function openEditTxById(txId) {
+  const t = txns.find(x=>x.id===txId);
+  if (!t) return;
+  editTxId = t.id;
+  $('edit-product').innerHTML = products.map(p=>`<option value="${p.id}"${p.id===t.productId?' selected':''}>${esc(p.name)}</option>`).join('');
+  setEditTxType(t.type);
+  $('edit-qty').value  = t.qty;
+  $('edit-date').value = t.date;
+  $('edit-note').value = t.note || '';
+  openOv('ov-editTx');
+}
+document.addEventListener('click', e => {
+  const link = e.target.closest('.tx-link');
+  if (link) { openEditTxById(link.dataset.txid); return; }
+  const row = e.target.closest('.det-tx-row');
+  if (row) openEditTxById(row.dataset.txid);
+});
+
+$('edit-in').addEventListener('click',  ()=>setEditTxType('in'));
+$('edit-out').addEventListener('click', ()=>setEditTxType('out'));
+function setEditTxType(t) {
+  editTxType = t;
+  $('edit-in').className  = 'type-btn'+(t==='in' ?' active-in':'');
+  $('edit-out').className = 'type-btn'+(t==='out'?' active-out':'');
+}
+
+$('btnSubmitEditTx').addEventListener('click', submitEditTx);
+$('edit-note').addEventListener('keydown', e=>{ if(e.key==='Enter') submitEditTx(); });
+async function submitEditTx() {
+  const pid=$('edit-product').value, qty=parseInt($('edit-qty').value)||0, date=$('edit-date').value, note=($('edit-note').value||'').trim();
+  if (!pid)  { toast('상품을 선택하세요.','err'); return; }
+  if (qty<1) { toast('수량은 1 이상이어야 합니다.','err'); return; }
+  if (!date) { toast('날짜를 입력하세요.','err'); return; }
+  try {
+    await updateDoc(doc(db,'txns',editTxId), {productId:pid, type:editTxType, qty, date, note});
+    closeOv('ov-editTx');
+    toast('입출고 내역이 수정되었습니다.','ok');
+  } catch(e) { toast('수정 중 오류가 발생했습니다.','err'); }
+}
+
+$('btnDeleteTx').addEventListener('click', async () => {
+  if (!editTxId) return;
+  if (!confirm('이 입출고 기록을 삭제하시겠습니까?')) return;
+  try {
+    await deleteDoc(doc(db,'txns',editTxId));
+    closeOv('ov-editTx');
+    toast('입출고 기록이 삭제되었습니다.','ok');
+  } catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
 });
 
 /* 상세 삭제 */
