@@ -518,6 +518,11 @@
     }
     .mgr-del:hover { background: rgba(248,113,113,.15); color: var(--red); }
 
+    /* ── Sortable Column ── */
+    .sortable-col { cursor: pointer; user-select: none; }
+    .sortable-col:hover { background: var(--surface3) !important; }
+    .sort-indicator { font-size: 9px; margin-left: 3px; opacity: 0.8; }
+
     /* ── Empty State ── */
     .empty {
       padding: 52px 24px; text-align: center;
@@ -605,8 +610,8 @@
       <table id="invTable">
         <thead>
           <tr>
-            <th>상품명 <button class="col-add" id="btnOpenProductMgr" title="상품 추가/삭제">＋</button></th>
-            <th>카테고리 <button class="col-add" id="btnOpenCatMgr" title="카테고리 관리">＋</button></th>
+            <th id="th-name" class="sortable-col">상품명 <span class="sort-indicator" id="si-name"></span><button class="col-add" id="btnOpenProductMgr" title="상품 추가/삭제">＋</button></th>
+            <th id="th-cat" class="sortable-col">카테고리 <span class="sort-indicator" id="si-cat"></span><button class="col-add" id="btnOpenCatMgr" title="카테고리 관리">＋</button></th>
             <th>현재 재고</th>
             <th>입출고</th>
           </tr>
@@ -856,6 +861,8 @@ let txType   = 'in';
 let quickProductId = null, quickType = 'in', detailId = null;
 let loaded = { products: false, txns: false, cats: false };
 let catsInitialized = false;
+let invSortKey = null; // 'name' | 'category' | null
+let invSortDir = 'asc';
 
 /* ── Helpers ── */
 const $ = id => document.getElementById(id);
@@ -933,9 +940,22 @@ function renderInv() {
       <div class="empty-text">등록된 상품이 없습니다</div>
       <div class="empty-sub">우측 상단의 [+ 상품 추가] 버튼을 눌러 시작하세요</div>
     </div></td></tr>`;
+    ['name','cat'].forEach(k => { const el=$('si-'+k); if(el) el.textContent=''; });
     return;
   }
-  tbody.innerHTML = products.map(p => {
+  let displayProducts = [...products];
+  if (invSortKey) {
+    displayProducts.sort((a, b) => {
+      const va = invSortKey === 'name' ? a.name : a.category;
+      const vb = invSortKey === 'name' ? b.name : b.category;
+      const cmp = va.localeCompare(vb, 'ko');
+      return invSortDir === 'asc' ? cmp : -cmp;
+    });
+  }
+  const siName = $('si-name'), siCat = $('si-cat');
+  if (siName) siName.textContent = invSortKey==='name'     ? (invSortDir==='asc'?'▲':'▼') : '';
+  if (siCat)  siCat.textContent  = invSortKey==='category' ? (invSortDir==='asc'?'▲':'▼') : '';
+  tbody.innerHTML = displayProducts.map(p => {
     const st = getStock(p.id);
     const nc = st===0?'stock-zero':st<=5?'stock-low':'';
     return `<tr>
@@ -955,7 +975,7 @@ function renderDaily() {
   if (!txns.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">입출고 기록이 없습니다</div></div>`; return; }
   const grouped = {};
   txns.forEach(t => { if(!grouped[t.date]) grouped[t.date]=[]; grouped[t.date].push(t); });
-  el.innerHTML = Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).map(date => {
+  el.innerHTML = Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).slice(0,5).map(date => {
     const rows = grouped[date].map(t => {
       const pName = (products.find(p=>p.id===t.productId)||{}).name||'(삭제된 상품)';
       const badge = t.type==='in'?'<span class="badge-in">입고</span>':'<span class="badge-out">출고</span>';
@@ -1140,8 +1160,22 @@ $('btnOpenAddTx').addEventListener('click', () => {
   setTxType('in'); openOv('ov-addTx');
 });
 $('btnOpenExcel').addEventListener('click', ()=>openOv('ov-excel'));
-$('btnOpenProductMgr').addEventListener('click', ()=>{ refreshCatSelects(); renderProductMgrList(); openOv('ov-productMgr'); setTimeout(()=>$('pmgr-name').focus(),120); });
-$('btnOpenCatMgr').addEventListener('click', ()=>{ $('cat-new').value=''; renderCatList(); openOv('ov-catMgr'); setTimeout(()=>$('cat-new').focus(),120); });
+$('btnOpenProductMgr').addEventListener('click', e=>{ e.stopPropagation(); refreshCatSelects(); renderProductMgrList(); openOv('ov-productMgr'); setTimeout(()=>$('pmgr-name').focus(),120); });
+$('btnOpenCatMgr').addEventListener('click', e=>{ e.stopPropagation(); $('cat-new').value=''; renderCatList(); openOv('ov-catMgr'); setTimeout(()=>$('cat-new').focus(),120); });
+
+/* 재고 테이블 정렬 */
+$('th-name').addEventListener('click', e => {
+  if (e.target.closest('.col-add')) return;
+  if (invSortKey==='name') invSortDir = invSortDir==='asc'?'desc':'asc';
+  else { invSortKey='name'; invSortDir='asc'; }
+  renderInv();
+});
+$('th-cat').addEventListener('click', e => {
+  if (e.target.closest('.col-add')) return;
+  if (invSortKey==='category') invSortDir = invSortDir==='asc'?'desc':'asc';
+  else { invSortKey='category'; invSortDir='asc'; }
+  renderInv();
+});
 
 /* 탭 */
 $('tab-daily').addEventListener('click',   ()=>switchTab('daily'));
