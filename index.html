@@ -863,7 +863,6 @@ import {
   doc,
   onSnapshot,
   addDoc,
-  setDoc,
   deleteDoc,
   writeBatch,
   query,
@@ -899,84 +898,42 @@ let quickProductId = null;
 let quickType      = 'in';
 let detailId       = null;
 let loaded = { products: false, txns: false, cats: false };
+let catsInitialized = false; // 기본 카테고리 중복 생성 방지
 
 /* ── Sync status ── */
 function setSyncStatus(online) {
   const dot  = document.getElementById('syncDot');
   const text = document.getElementById('syncText');
   if (online) {
-    dot.className  = 'sync-dot';
+    dot.className    = 'sync-dot';
     text.textContent = '실시간 연동 중';
   } else {
-    dot.className  = 'sync-dot offline';
+    dot.className    = 'sync-dot offline';
     text.textContent = '연결 끊김';
   }
 }
 
-/* ── Hide loading when all 3 listeners fire ── */
+/* ── Hide loading when all 3 listeners have fired ── */
 function checkLoaded() {
   if (loaded.products && loaded.txns && loaded.cats) {
     const ls = document.getElementById('loadingScreen');
     ls.classList.add('hidden');
     setTimeout(() => ls.style.display = 'none', 450);
-    renderAll();
   }
 }
-
-/* ── Real-time Listeners ── */
-onSnapshot(query(colProducts, orderBy('createdAt')), snap => {
-  products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  loaded.products = true;
-  checkLoaded();
-  renderAll();
-  setSyncStatus(true);
-}, () => setSyncStatus(false));
-
-onSnapshot(query(colTxns, orderBy('createdAt')), snap => {
-  txns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  loaded.txns = true;
-  checkLoaded();
-  renderAll();
-}, () => setSyncStatus(false));
-
-onSnapshot(colCats, snap => {
-  if (snap.docs.length === 0) {
-    // 첫 실행: 기본 카테고리 생성
-    const defaults = ['액세서리','주변기기','가구','기타'];
-    defaults.forEach(name => addDoc(colCats, { name, createdAt: serverTimestamp() }));
-  } else {
-    cats = snap.docs.map(d => ({ id: d.id, name: d.data().name }));
-  }
-  loaded.cats = true;
-  checkLoaded();
-  renderAll();
-}, () => setSyncStatus(false));
-
-/* ── Theme ── */
-function applyTheme(save_) {
-  document.documentElement.setAttribute('data-theme', theme);
-  document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
-  if (save_) localStorage.setItem('nds_theme', theme);
-}
-applyTheme(false);
-document.getElementById('themeBtn').addEventListener('click', () => {
-  theme = theme === 'dark' ? 'light' : 'dark';
-  applyTheme(true);
-});
 
 /* ── Helpers ── */
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function today() { return new Date().toISOString().split('T')[0]; }
 
 function getStock(pid) {
   const p = products.find(x => x.id === pid);
   if (!p) return 0;
   return (p.initialStock || 0)
-    + txns.filter(t => t.productId === pid && t.type === 'in').reduce((s,t)  => s+t.qty, 0)
-    - txns.filter(t => t.productId === pid && t.type === 'out').reduce((s,t) => s+t.qty, 0);
+    + txns.filter(t => t.productId === pid && t.type === 'in').reduce((s,t)  => s + t.qty, 0)
+    - txns.filter(t => t.productId === pid && t.type === 'out').reduce((s,t) => s + t.qty, 0);
 }
-function getTotalIn(pid)  { return txns.filter(t => t.productId===pid && t.type==='in').reduce((s,t)  => s+t.qty, 0); }
-function getTotalOut(pid) { return txns.filter(t => t.productId===pid && t.type==='out').reduce((s,t) => s+t.qty, 0); }
+function getTotalIn(pid)  { return txns.filter(t => t.productId === pid && t.type === 'in').reduce((s,t)  => s + t.qty, 0); }
+function getTotalOut(pid) { return txns.filter(t => t.productId === pid && t.type === 'out').reduce((s,t) => s + t.qty, 0); }
 
 function catColorClass(name) {
   const palette = ['tag-blue','tag-purple','tag-green','tag-brown'];
@@ -989,21 +946,21 @@ function catTag(c) { return `<span class="tag ${catColorClass(c)}">${escHtml(c)}
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-function escAttr(s) { return String(s).replace(/'/g,"\\'"); }
+function escAttr(s) { return String(s).replace(/'/g, "\\'").replace(/"/g, '\\"'); }
 function fmtDate(str) {
   const d = new Date(str + 'T00:00:00');
   return d.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
 }
 function fmtMonth(str) {
-  const [y,m] = str.split('-');
+  const [y, m] = str.split('-');
   return `${y}년 ${parseInt(m)}월`;
 }
 
 /* ── Toast ── */
-function toast(msg, type='ok') {
+function toast(msg, type = 'ok') {
   const wrap = document.getElementById('toastWrap');
   const el   = document.createElement('div');
-  el.className = `toast ${type}`;
+  el.className   = `toast ${type}`;
   el.textContent = msg;
   wrap.appendChild(el);
   setTimeout(() => {
@@ -1015,18 +972,24 @@ function toast(msg, type='ok') {
 /* ── Modal Helpers ── */
 function openOv(id)  { document.getElementById(id).classList.add('open'); }
 function closeOv(id) { document.getElementById(id).classList.remove('open'); }
-window.ovClick = (e, id) => { if (e.target === document.getElementById(id)) closeOv(id); };
-window.closeOv = closeOv;
+window.ovClick  = (e, id) => { if (e.target === document.getElementById(id)) closeOv(id); };
+window.closeOv  = closeOv;
+window.openDetail      = openDetail;
+window.deleteFromDetail = deleteFromDetail;
+window.openCatMgr      = openCatMgr;
+window.openProductMgr  = openProductMgr;
+window.openExcelModal  = () => openOv('ov-excel');
 
 /* ── Date Badge ── */
-function renderDate() {
+(function renderDate() {
   const now = new Date();
   document.getElementById('dateBadge').textContent =
     now.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
-}
-renderDate();
+})();
 
-/* ── Render All ── */
+/* ══════════════════════
+   RENDER FUNCTIONS
+══════════════════════ */
 function renderAll() {
   renderInv();
   renderDaily();
@@ -1048,7 +1011,7 @@ function renderInv() {
     return;
   }
   tbody.innerHTML = products.map(p => {
-    const st = getStock(p.id);
+    const st     = getStock(p.id);
     const numCls = st === 0 ? 'stock-zero' : st <= 5 ? 'stock-low' : '';
     return `<tr>
       <td><span class="product-link" onclick="openDetail('${p.id}')">${escHtml(p.name)}</span></td>
@@ -1076,17 +1039,17 @@ function renderDaily() {
     if (!grouped[t.date]) grouped[t.date] = [];
     grouped[t.date].push(t);
   });
-  const sorted = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
+  const sorted = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
   el.innerHTML = sorted.map(date => {
     const rows = grouped[date].map(t => {
-      const pName = (products.find(p => p.id === t.productId) || {}).name || '(삭제된 상품)';
-      const badge = t.type==='in' ? '<span class="badge-in">입고</span>' : '<span class="badge-out">출고</span>';
-      const valCls = t.type==='in' ? 'color:var(--green)' : 'color:var(--red)';
+      const pName  = (products.find(p => p.id === t.productId) || {}).name || '(삭제된 상품)';
+      const badge  = t.type === 'in' ? '<span class="badge-in">입고</span>' : '<span class="badge-out">출고</span>';
+      const valCls = t.type === 'in' ? 'color:var(--green)' : 'color:var(--red)';
       return `<tr>
         <td style="font-size:13px;">${escHtml(pName)}</td>
         <td>${badge}</td>
         <td class="num" style="${valCls};font-weight:500;">${t.type==='in'?'+':'-'}${t.qty.toLocaleString()}</td>
-        <td style="font-size:12px;color:var(--text-muted);">${escHtml(t.note||'-')}</td>
+        <td style="font-size:12px;color:var(--text-muted);">${escHtml(t.note || '-')}</td>
       </tr>`;
     }).join('');
     return `<div style="margin-bottom:20px;">
@@ -1108,31 +1071,31 @@ function renderMonthly() {
   }
   const monthly = {};
   txns.forEach(t => {
-    const m = t.date.slice(0,7);
-    if (!monthly[m]) monthly[m] = { in:0, out:0, cnt:0 };
-    if (t.type==='in') monthly[m].in += t.qty; else monthly[m].out += t.qty;
+    const m = t.date.slice(0, 7);
+    if (!monthly[m]) monthly[m] = { in: 0, out: 0, cnt: 0 };
+    if (t.type === 'in') monthly[m].in += t.qty; else monthly[m].out += t.qty;
     monthly[m].cnt++;
   });
-  const sortedDesc = Object.keys(monthly).sort((a,b) => b.localeCompare(a));
+  const sortedDesc = Object.keys(monthly).sort((a, b) => b.localeCompare(a));
   const sortedAsc  = [...sortedDesc].reverse();
-  const tableRows = sortedDesc.map(m => {
-    const d = monthly[m];
+  const tableRows  = sortedDesc.map(m => {
+    const d   = monthly[m];
     const net = d.in - d.out;
-    const nc = net >= 0 ? 'color:var(--green)' : 'color:var(--red)';
+    const nc  = net >= 0 ? 'color:var(--green)' : 'color:var(--red)';
     return `<tr>
       <td>${fmtMonth(m)}</td>
       <td class="num" style="color:var(--green);">+${d.in.toLocaleString()}</td>
       <td class="num" style="color:var(--red);">-${d.out.toLocaleString()}</td>
-      <td class="num" style="${nc};font-weight:600;">${net>=0?'+':''}${net.toLocaleString()}</td>
+      <td class="num" style="${nc};font-weight:600;">${net >= 0 ? '+' : ''}${net.toLocaleString()}</td>
       <td class="num" style="color:var(--text-muted);">${d.cnt}</td>
     </tr>`;
   }).join('');
   const maxV = Math.max(...Object.values(monthly).map(d => Math.max(d.in, d.out)), 1);
   const bars = sortedAsc.map(m => {
-    const d = monthly[m];
+    const d  = monthly[m];
     const ih = Math.round((d.in  / maxV) * 140);
     const oh = Math.round((d.out / maxV) * 140);
-    const lb = m.slice(5).replace(/^0/,'');
+    const lb = m.slice(5).replace(/^0/, '');
     return `<div class="bar-group">
       <div class="bar-col"><div class="bar bar-in-color"  style="height:${ih}px;" title="입고 ${d.in.toLocaleString()}"></div></div>
       <div class="bar-col">
@@ -1158,11 +1121,11 @@ function renderMonthly() {
 
 /* ── Summary ── */
 function renderSummary() {
-  const el = document.getElementById('summaryContent');
+  const el         = document.getElementById('summaryContent');
   const totalProd  = products.length;
-  const totalStock = products.reduce((s,p) => s + getStock(p.id), 0);
-  const totalIn    = txns.filter(t=>t.type==='in').reduce((s,t)=>s+t.qty,0);
-  const totalOut   = txns.filter(t=>t.type==='out').reduce((s,t)=>s+t.qty,0);
+  const totalStock = products.reduce((s, p) => s + getStock(p.id), 0);
+  const totalIn    = txns.filter(t => t.type === 'in').reduce((s, t)  => s + t.qty, 0);
+  const totalOut   = txns.filter(t => t.type === 'out').reduce((s, t) => s + t.qty, 0);
   const zeroCount  = products.filter(p => getStock(p.id) === 0).length;
   el.innerHTML = `
     <div class="summary-grid">
@@ -1178,27 +1141,93 @@ function renderSummary() {
   `;
 }
 
+/* ── Cat Select 갱신 헬퍼 ── */
+function buildCatOptions() {
+  return cats.map(c => `<option value="${escHtml(c.name)}">${escHtml(c.name)}</option>`).join('');
+}
+function refreshAddProductCatSelect() {
+  document.getElementById('ap-cat').innerHTML = buildCatOptions();
+}
+function refreshProductMgrCatSelect() {
+  document.getElementById('pmgr-cat').innerHTML = buildCatOptions();
+}
+
+/* ══════════════════════
+   REAL-TIME LISTENERS
+══════════════════════ */
+onSnapshot(query(colProducts, orderBy('createdAt')), snap => {
+  products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  loaded.products = true;
+  checkLoaded();
+  renderAll();
+  setSyncStatus(true);
+  // 열린 팝업 즉시 갱신
+  if (document.getElementById('ov-productMgr').classList.contains('open')) renderProductMgrList();
+  if (document.getElementById('ov-detail').classList.contains('open') && detailId) refreshDetail();
+}, () => setSyncStatus(false));
+
+onSnapshot(query(colTxns, orderBy('createdAt')), snap => {
+  txns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  loaded.txns = true;
+  checkLoaded();
+  renderAll();
+  // 열린 상세 팝업 즉시 갱신
+  if (document.getElementById('ov-detail').classList.contains('open') && detailId) refreshDetail();
+}, () => setSyncStatus(false));
+
+onSnapshot(colCats, snap => {
+  // 첫 실행 시 기본 카테고리 생성 (딱 한 번만, 중복 방지)
+  if (snap.docs.length === 0 && !catsInitialized) {
+    catsInitialized = true;
+    const defaults = ['액세서리','주변기기','가구','기타'];
+    defaults.forEach(name => addDoc(colCats, { name, createdAt: serverTimestamp() }));
+    return; // 기본값 저장 후 onSnapshot이 다시 호출되므로 여기서 종료
+  }
+  catsInitialized = true;
+  cats = snap.docs.map(d => ({ id: d.id, name: d.data().name }));
+  loaded.cats = true;
+  checkLoaded();
+  renderAll();
+  // 열린 팝업 즉시 갱신
+  if (document.getElementById('ov-catMgr').classList.contains('open')) renderCatList();
+  if (document.getElementById('ov-productMgr').classList.contains('open')) refreshProductMgrCatSelect();
+  if (document.getElementById('ov-addProduct').classList.contains('open')) refreshAddProductCatSelect();
+}, () => setSyncStatus(false));
+
+/* ── Theme ── */
+function applyTheme(save_) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+  if (save_) localStorage.setItem('nds_theme', theme);
+}
+applyTheme(false);
+document.getElementById('themeBtn').addEventListener('click', () => {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  applyTheme(true);
+});
+
 /* ── Tabs ── */
 window.switchTab = (tab) => {
   ['daily','monthly'].forEach(t => {
-    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
-    document.getElementById('panel-'+t).classList.toggle('active', t===tab);
+    document.getElementById('tab-'+t).classList.toggle('active', t === tab);
+    document.getElementById('panel-'+t).classList.toggle('active', t === tab);
   });
 };
 
 /* ── Qty Helpers ── */
-window.adjQty = (id, delta) => {
+window.adjQty   = (id, delta) => {
   const el = document.getElementById(id);
   el.value = Math.max(1, (parseInt(el.value) || 0) + delta);
 };
 window.setQtyVal = (id, v) => { document.getElementById(id).value = v; };
 
-/* ── Add Product ── */
+/* ══════════════════════
+   ADD PRODUCT
+══════════════════════ */
 window.openAddProduct = () => {
   document.getElementById('ap-name').value  = '';
   document.getElementById('ap-stock').value = '0';
-  const sel = document.getElementById('ap-cat');
-  sel.innerHTML = cats.map(c => `<option value="${escHtml(c.name)}">${escHtml(c.name)}</option>`).join('');
+  refreshAddProductCatSelect();
   openOv('ov-addProduct');
   setTimeout(() => document.getElementById('ap-name').focus(), 120);
 };
@@ -1207,20 +1236,22 @@ window.submitAddProduct = async () => {
   const name  = document.getElementById('ap-name').value.trim();
   const cat   = document.getElementById('ap-cat').value;
   const stock = Math.max(0, parseInt(document.getElementById('ap-stock').value) || 0);
-  if (!name) { toast('상품명을 입력하세요.','err'); return; }
-  if (products.find(p => p.name === name)) { toast('이미 존재하는 상품명입니다.','err'); return; }
+  if (!name) { toast('상품명을 입력하세요.', 'err'); return; }
+  if (!cat)  { toast('카테고리를 선택하세요.', 'err'); return; }
+  if (products.find(p => p.name === name)) { toast('이미 존재하는 상품명입니다.', 'err'); return; }
   try {
     await addDoc(colProducts, { name, category: cat, initialStock: stock, createdAt: serverTimestamp() });
     closeOv('ov-addProduct');
-    toast(`"${name}" 상품이 추가되었습니다.`,'ok');
-  } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+    toast(`"${name}" 상품이 추가되었습니다.`, 'ok');
+  } catch(e) { toast('저장 중 오류가 발생했습니다.', 'err'); }
 };
+document.getElementById('ap-name').addEventListener('keydown', e => { if (e.key === 'Enter') window.submitAddProduct(); });
 
-document.getElementById('ap-name').addEventListener('keydown', e => { if(e.key==='Enter') window.submitAddProduct(); });
-
-/* ── Add Transaction ── */
+/* ══════════════════════
+   ADD TRANSACTION
+══════════════════════ */
 window.openAddTx = () => {
-  if (!products.length) { toast('먼저 상품을 추가해주세요.','err'); return; }
+  if (!products.length) { toast('먼저 상품을 추가해주세요.', 'err'); return; }
   const sel = document.getElementById('tx-product');
   sel.innerHTML = products.map(p => `<option value="${p.id}">${escHtml(p.name)}</option>`).join('');
   document.getElementById('tx-qty').value  = '1';
@@ -1232,8 +1263,8 @@ window.openAddTx = () => {
 
 function setTxType(t) {
   txType = t;
-  document.getElementById('tx-in').className  = 'type-btn' + (t==='in'  ? ' active-in'  : '');
-  document.getElementById('tx-out').className = 'type-btn' + (t==='out' ? ' active-out' : '');
+  document.getElementById('tx-in').className  = 'type-btn' + (t === 'in'  ? ' active-in'  : '');
+  document.getElementById('tx-out').className = 'type-btn' + (t === 'out' ? ' active-out' : '');
 }
 window.setTxType = setTxType;
 
@@ -1242,25 +1273,26 @@ window.submitTx = async () => {
   const qty  = parseInt(document.getElementById('tx-qty').value) || 0;
   const date = document.getElementById('tx-date').value;
   const note = document.getElementById('tx-note').value.trim();
-  if (!pid)    { toast('상품을 선택하세요.','err'); return; }
-  if (qty < 1) { toast('수량은 1 이상이어야 합니다.','err'); return; }
-  if (!date)   { toast('날짜를 입력하세요.','err'); return; }
+  if (!pid)    { toast('상품을 선택하세요.', 'err'); return; }
+  if (qty < 1) { toast('수량은 1 이상이어야 합니다.', 'err'); return; }
+  if (!date)   { toast('날짜를 입력하세요.', 'err'); return; }
   try {
     await addDoc(colTxns, { productId: pid, type: txType, qty, date, note, createdAt: serverTimestamp() });
     closeOv('ov-addTx');
     const p = products.find(x => x.id === pid);
-    toast(`${escHtml(p.name)} ${txType==='in'?'입고':'출고'} ${qty.toLocaleString()}개 등록 완료!`,'ok');
-  } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+    toast(`${escHtml(p.name)} ${txType === 'in' ? '입고' : '출고'} ${qty.toLocaleString()}개 등록 완료!`, 'ok');
+  } catch(e) { toast('저장 중 오류가 발생했습니다.', 'err'); }
 };
+document.getElementById('tx-note').addEventListener('keydown', e => { if (e.key === 'Enter') window.submitTx(); });
 
-document.getElementById('tx-note').addEventListener('keydown', e => { if(e.key==='Enter') window.submitTx(); });
-
-/* ── Quick Popup ── */
+/* ══════════════════════
+   QUICK POPUP
+══════════════════════ */
 window.openQuick = (pid, type) => {
   quickProductId = pid;
   quickType = type;
-  const p  = products.find(x => x.id === pid);
-  const st = getStock(pid);
+  const p   = products.find(x => x.id === pid);
+  const st  = getStock(pid);
   const isIn = type === 'in';
   document.getElementById('quick-title').textContent        = isIn ? '▲ 입고' : '▼ 출고';
   document.getElementById('quick-product-name').textContent = p.name;
@@ -1280,27 +1312,42 @@ window.submitQuick = async () => {
   const qty  = parseInt(document.getElementById('quick-qty').value) || 0;
   const date = document.getElementById('quick-date').value;
   const note = document.getElementById('quick-note').value.trim();
-  if (qty < 1) { toast('수량은 1 이상이어야 합니다.','err'); return; }
-  if (!date)   { toast('날짜를 입력하세요.','err'); return; }
+  if (qty < 1) { toast('수량은 1 이상이어야 합니다.', 'err'); return; }
+  if (!date)   { toast('날짜를 입력하세요.', 'err'); return; }
   try {
     await addDoc(colTxns, { productId: quickProductId, type: quickType, qty, date, note, createdAt: serverTimestamp() });
     closeOv('ov-quick');
     const p = products.find(x => x.id === quickProductId);
-    toast(`${escHtml(p.name)} ${quickType==='in'?'입고':'출고'} ${qty.toLocaleString()}개 등록 완료!`,'ok');
-  } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+    toast(`${escHtml(p.name)} ${quickType === 'in' ? '입고' : '출고'} ${qty.toLocaleString()}개 등록 완료!`, 'ok');
+  } catch(e) { toast('저장 중 오류가 발생했습니다.', 'err'); }
 };
+document.getElementById('quick-note').addEventListener('keydown', e => { if (e.key === 'Enter') window.submitQuick(); });
 
-document.getElementById('quick-note').addEventListener('keydown', e => { if(e.key==='Enter') window.submitQuick(); });
+/* ══════════════════════
+   PRODUCT DETAIL
+══════════════════════ */
+function buildDetailBody(pTxns) {
+  const sorted = [...pTxns].sort((a, b) => b.date.localeCompare(a.date));
+  if (!sorted.length) return `<tr><td colspan="4"><div class="empty"><div class="empty-text">입출고 기록이 없습니다</div></div></td></tr>`;
+  return sorted.map(t => {
+    const badge = t.type === 'in' ? '<span class="badge-in">입고</span>' : '<span class="badge-out">출고</span>';
+    const vc    = t.type === 'in' ? 'color:var(--green)' : 'color:var(--red)';
+    return `<tr>
+      <td class="num" style="font-size:13px;">${t.date}</td>
+      <td>${badge}</td>
+      <td class="num" style="${vc};font-weight:500;">${t.type==='in'?'+':'-'}${t.qty.toLocaleString()}</td>
+      <td style="font-size:13px;color:var(--text-muted);">${escHtml(t.note || '-')}</td>
+    </tr>`;
+  }).join('');
+}
 
-/* ── Product Detail ── */
-window.openDetail = (pid) => {
-  detailId = pid;
-  const p = products.find(x => x.id === pid);
-  if (!p) return;
-  const pTxns = txns.filter(t => t.productId === pid);
-  const st    = getStock(pid);
-  const tin   = getTotalIn(pid);
-  const tout  = getTotalOut(pid);
+function refreshDetail() {
+  const p = products.find(x => x.id === detailId);
+  if (!p) { closeOv('ov-detail'); return; } // 상품이 삭제된 경우 팝업 닫기
+  const pTxns = txns.filter(t => t.productId === detailId);
+  const st    = getStock(detailId);
+  const tin   = getTotalIn(detailId);
+  const tout  = getTotalOut(detailId);
   document.getElementById('det-name').textContent = p.name;
   document.getElementById('det-meta').textContent = `${p.category} · 총 ${pTxns.length}건`;
   document.getElementById('det-cards').innerHTML = `
@@ -1308,21 +1355,14 @@ window.openDetail = (pid) => {
     <div class="sum-card"><div class="sum-card-label">누적 입고</div><div class="sum-card-val" style="color:var(--green);">${tin.toLocaleString()}</div></div>
     <div class="sum-card"><div class="sum-card-label">누적 출고</div><div class="sum-card-val" style="color:var(--red);">${tout.toLocaleString()}</div></div>
   `;
-  const sorted = [...pTxns].sort((a,b) => b.date.localeCompare(a.date));
-  document.getElementById('det-body').innerHTML = sorted.length
-    ? sorted.map(t => {
-        const badge = t.type==='in' ? '<span class="badge-in">입고</span>' : '<span class="badge-out">출고</span>';
-        const vc = t.type==='in' ? 'color:var(--green)' : 'color:var(--red)';
-        return `<tr>
-          <td class="num" style="font-size:13px;">${t.date}</td>
-          <td>${badge}</td>
-          <td class="num" style="${vc};font-weight:500;">${t.type==='in'?'+':'-'}${t.qty.toLocaleString()}</td>
-          <td style="font-size:13px;color:var(--text-muted);">${escHtml(t.note||'-')}</td>
-        </tr>`;
-      }).join('')
-    : `<tr><td colspan="4"><div class="empty"><div class="empty-text">입출고 기록이 없습니다</div></div></td></tr>`;
+  document.getElementById('det-body').innerHTML = buildDetailBody(pTxns);
+}
+
+function openDetail(pid) {
+  detailId = pid;
+  refreshDetail();
   openOv('ov-detail');
-};
+}
 
 window.deleteFromDetail = async () => {
   if (!detailId) return;
@@ -1335,17 +1375,20 @@ window.deleteFromDetail = async () => {
     txns.filter(t => t.productId === detailId).forEach(t => batch.delete(doc(db, 'txns', t.id)));
     await batch.commit();
     closeOv('ov-detail');
-    toast(`"${escHtml(p.name)}" 상품 삭제됨`,'ok');
-  } catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
+    detailId = null;
+    toast(`"${escHtml(p.name)}" 상품 삭제됨`, 'ok');
+  } catch(e) { toast('삭제 중 오류가 발생했습니다.', 'err'); }
 };
 
-/* ── Category Manager ── */
-window.openCatMgr = () => {
+/* ══════════════════════
+   CATEGORY MANAGER
+══════════════════════ */
+function openCatMgr() {
   document.getElementById('cat-new').value = '';
   renderCatList();
   openOv('ov-catMgr');
   setTimeout(() => document.getElementById('cat-new').focus(), 120);
-};
+}
 
 function renderCatList() {
   const el = document.getElementById('catList');
@@ -1363,47 +1406,51 @@ function renderCatList() {
 
 window.addCat = async () => {
   const name = document.getElementById('cat-new').value.trim();
-  if (!name) { toast('카테고리 이름을 입력하세요.','err'); return; }
-  if (cats.find(c => c.name === name)) { toast('이미 존재하는 카테고리입니다.','err'); return; }
+  if (!name) { toast('카테고리 이름을 입력하세요.', 'err'); return; }
+  if (cats.find(c => c.name === name)) { toast('이미 존재하는 카테고리입니다.', 'err'); return; }
   try {
     await addDoc(colCats, { name, createdAt: serverTimestamp() });
     document.getElementById('cat-new').value = '';
-    toast(`"${name}" 카테고리가 추가되었습니다.`,'ok');
-  } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+    // onSnapshot이 renderCatList 자동 호출하므로 여기서 별도 호출 불필요
+    toast(`"${name}" 카테고리가 추가되었습니다.`, 'ok');
+  } catch(e) { toast('저장 중 오류가 발생했습니다.', 'err'); }
 };
 
 window.deleteCat = async (id, name) => {
-  if (products.find(p => p.category === name)) { toast('사용 중인 카테고리는 삭제할 수 없습니다.','err'); return; }
+  if (products.find(p => p.category === name)) { toast('사용 중인 카테고리는 삭제할 수 없습니다.', 'err'); return; }
   try {
     await deleteDoc(doc(db, 'cats', id));
-    toast(`"${name}" 카테고리 삭제됨`,'ok');
-  } catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
+    // onSnapshot이 renderCatList 자동 호출하므로 여기서 별도 호출 불필요
+    toast(`"${name}" 카테고리 삭제됨`, 'ok');
+  } catch(e) { toast('삭제 중 오류가 발생했습니다.', 'err'); }
 };
 
-/* ── Product Manager ── */
-window.openProductMgr = () => {
+/* ══════════════════════
+   PRODUCT MANAGER
+══════════════════════ */
+function openProductMgr() {
   document.getElementById('pmgr-name').value  = '';
   document.getElementById('pmgr-stock').value = '0';
-  const sel = document.getElementById('pmgr-cat');
-  sel.innerHTML = cats.map(c => `<option value="${escHtml(c.name)}">${escHtml(c.name)}</option>`).join('');
+  refreshProductMgrCatSelect();
   renderProductMgrList();
   openOv('ov-productMgr');
   setTimeout(() => document.getElementById('pmgr-name').focus(), 120);
-};
+}
 
 window.submitAddFromMgr = async () => {
   const name  = document.getElementById('pmgr-name').value.trim();
   const cat   = document.getElementById('pmgr-cat').value;
   const stock = Math.max(0, parseInt(document.getElementById('pmgr-stock').value) || 0);
-  if (!name) { toast('상품명을 입력하세요.','err'); return; }
-  if (products.find(p => p.name === name)) { toast('이미 존재하는 상품명입니다.','err'); return; }
+  if (!name) { toast('상품명을 입력하세요.', 'err'); return; }
+  if (!cat)  { toast('카테고리를 선택하세요.', 'err'); return; }
+  if (products.find(p => p.name === name)) { toast('이미 존재하는 상품명입니다.', 'err'); return; }
   try {
     await addDoc(colProducts, { name, category: cat, initialStock: stock, createdAt: serverTimestamp() });
     document.getElementById('pmgr-name').value  = '';
     document.getElementById('pmgr-stock').value = '0';
-    renderProductMgrList();
-    toast(`"${name}" 상품이 추가되었습니다.`,'ok');
-  } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+    // onSnapshot이 renderProductMgrList 자동 호출하므로 여기서 별도 호출 불필요
+    toast(`"${name}" 상품이 추가되었습니다.`, 'ok');
+  } catch(e) { toast('저장 중 오류가 발생했습니다.', 'err'); }
 };
 
 function renderProductMgrList() {
@@ -1431,14 +1478,14 @@ window.deleteProduct = async (id, name) => {
     batch.delete(doc(db, 'products', id));
     txns.filter(t => t.productId === id).forEach(t => batch.delete(doc(db, 'txns', t.id)));
     await batch.commit();
-    renderProductMgrList();
-    toast(`"${escHtml(name)}" 상품 삭제됨`,'ok');
-  } catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
+    // onSnapshot이 renderProductMgrList 자동 호출하므로 여기서 별도 호출 불필요
+    toast(`"${escHtml(name)}" 상품 삭제됨`, 'ok');
+  } catch(e) { toast('삭제 중 오류가 발생했습니다.', 'err'); }
 };
 
-/* ── Excel ── */
-window.openExcelModal = () => openOv('ov-excel');
-
+/* ══════════════════════
+   EXCEL
+══════════════════════ */
 window.doExcel = () => {
   const inc = {
     name:  document.getElementById('xl-name').checked,
@@ -1447,7 +1494,7 @@ window.doExcel = () => {
     tin:   document.getElementById('xl-in').checked,
     tout:  document.getElementById('xl-out').checked,
   };
-  if (!Object.values(inc).some(Boolean)) { toast('최소 하나 이상의 항목을 선택하세요.','err'); return; }
+  if (!Object.values(inc).some(Boolean)) { toast('최소 하나 이상의 항목을 선택하세요.', 'err'); return; }
   const header = [];
   if (inc.name)  header.push('상품명');
   if (inc.cat)   header.push('카테고리');
@@ -1468,21 +1515,21 @@ window.doExcel = () => {
   XLSX.utils.book_append_sheet(wb, ws, '재고현황');
   XLSX.writeFile(wb, 'NDS_재고현황.xlsx');
   closeOv('ov-excel');
-  toast('엑셀 파일이 다운로드되었습니다.','ok');
+  toast('엑셀 파일이 다운로드되었습니다.', 'ok');
 };
 
 window.doProductExcel = () => {
   if (!detailId) return;
   const p = products.find(x => x.id === detailId);
   if (!p) return;
-  const pTxns = txns.filter(t => t.productId === detailId).sort((a,b) => b.date.localeCompare(a.date));
+  const pTxns = txns.filter(t => t.productId === detailId).sort((a, b) => b.date.localeCompare(a.date));
   const header = ['날짜','구분','수량','내용'];
-  const rows = pTxns.map(t => [t.date, t.type==='in'?'입고':'출고', t.qty, t.note||'']);
+  const rows   = pTxns.map(t => [t.date, t.type === 'in' ? '입고' : '출고', t.qty, t.note || '']);
   const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '입출고내역');
   XLSX.writeFile(wb, `NDS_${p.name}_입출고내역.xlsx`);
-  toast('엑셀 파일이 다운로드되었습니다.','ok');
+  toast('엑셀 파일이 다운로드되었습니다.', 'ok');
 };
 
 </script>
