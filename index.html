@@ -576,10 +576,56 @@
       .row2 { grid-template-columns: 1fr; }
       .summary-grid { grid-template-columns: 1fr 1fr; }
     }
-    @media (max-width: 600px) {
-      .header { padding: 0 14px; }
-      .main { padding: 78px 12px 32px; }
+
+    @media (max-width: 768px) {
+      body { font-size: 13px; }
+
+      /* Header */
+      .header { padding: 0 14px; height: 56px; }
+      .header-title { font-size: 15px; }
+      .header-subtitle { display: none; }
       .date-badge { display: none; }
+      .sync-badge { display: none; }
+      .count-badge { display: none; }
+      .header-right { gap: 6px; }
+      .header-right .btn { padding: 7px 10px; font-size: 12px; }
+
+      /* Main */
+      .main { padding: 70px 12px 28px; }
+
+      /* Panel */
+      .panel + .panel { margin-top: 14px; }
+      .panel-head { padding: 14px 16px; flex-wrap: wrap; gap: 8px; }
+      .row2 { gap: 14px; margin-top: 14px; }
+
+      /* Table */
+      .table-wrap { -webkit-overflow-scrolling: touch; }
+      thead th { padding: 9px 12px; font-size: 10px; }
+      tbody td { padding: 11px 12px; }
+
+      /* Tab */
+      .tab-bar { padding: 0 12px; }
+      .tab-btn { padding: 11px 14px; font-size: 12px; }
+      .tab-panel { padding: 16px 14px; }
+
+      /* Summary cards */
+      .sum-card { padding: 12px 14px; }
+      .sum-card-val { font-size: 18px; }
+
+      /* Detail modal 3-col → 2-col */
+      #det-cards { grid-template-columns: 1fr 1fr !important; }
+
+      /* Modal */
+      .modal { width: 92vw !important; padding: 22px 18px; border-radius: 16px; }
+      .modal-title { font-size: 16px; margin-bottom: 16px; }
+
+      /* Empty state */
+      .empty { padding: 36px 16px; }
+      .empty-icon { font-size: 36px; }
+
+      /* Toast */
+      .toast-wrap { bottom: 16px; }
+      .toast { white-space: normal; text-align: center; max-width: 85vw; }
     }
   </style>
 </head>
