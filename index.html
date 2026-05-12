@@ -564,11 +564,10 @@
     }
   </style>
 </head>
+</head>
 <body>
 
-<!-- ══════════════════════════════
-     LOADING SCREEN
-══════════════════════════════ -->
+<!-- Loading Screen -->
 <div id="loadingScreen">
   <div class="loading-logo">NDS</div>
   <div class="loading-spinner"></div>
@@ -591,34 +590,23 @@
     <span class="sync-badge" id="syncBadge"><span class="sync-dot" id="syncDot"></span><span id="syncText">실시간 연동 중</span></span>
     <button class="theme-btn" id="themeBtn" title="테마 전환">☀️</button>
     <span class="count-badge" id="countBadge">0개 상품</span>
-    <button class="btn btn-secondary" onclick="openAddProduct()">+ 상품 추가</button>
-    <button class="btn btn-primary" onclick="openAddTx()">↑↓ 입출고 등록</button>
+    <button class="btn btn-secondary" id="btnOpenAddProduct">+ 상품 추가</button>
+    <button class="btn btn-primary"   id="btnOpenAddTx">↑↓ 입출고 등록</button>
   </div>
 </header>
 
-<!-- ══════════════════════════════
-     MAIN
-══════════════════════════════ -->
 <main class="main">
-
-  <!-- ① Inventory Panel -->
   <div class="panel">
     <div class="panel-head">
       <span class="panel-title">📦 상품 재고 현황</span>
-      <button class="btn btn-secondary" onclick="openExcelModal()">📥 엑셀 다운로드</button>
+      <button class="btn btn-secondary" id="btnOpenExcel">📥 엑셀 다운로드</button>
     </div>
     <div class="table-wrap">
       <table id="invTable">
         <thead>
           <tr>
-            <th>
-              상품명
-              <button class="col-add" onclick="openProductMgr()" title="상품 추가/삭제">＋</button>
-            </th>
-            <th>
-              카테고리
-              <button class="col-add" onclick="openCatMgr()" title="카테고리 관리">＋</button>
-            </th>
+            <th>상품명 <button class="col-add" id="btnOpenProductMgr" title="상품 추가/삭제">＋</button></th>
+            <th>카테고리 <button class="col-add" id="btnOpenCatMgr" title="카테고리 관리">＋</button></th>
             <th>현재 재고</th>
             <th>입출고</th>
           </tr>
@@ -628,40 +616,28 @@
     </div>
   </div>
 
-  <!-- ② Bottom Row -->
   <div class="row2">
-
-    <!-- Stats Panel (tabbed) -->
     <div class="panel" style="overflow:visible;">
       <div class="tab-bar">
-        <button class="tab-btn active" id="tab-daily"   onclick="switchTab('daily')">날짜별 입출고 현황</button>
-        <button class="tab-btn"        id="tab-monthly" onclick="switchTab('monthly')">월간 통계</button>
+        <button class="tab-btn active" id="tab-daily">날짜별 입출고 현황</button>
+        <button class="tab-btn"        id="tab-monthly">월간 통계</button>
       </div>
-      <div class="tab-panel active" id="panel-daily"   ><div id="dailyContent"></div></div>
-      <div class="tab-panel"         id="panel-monthly"><div id="monthlyContent"></div></div>
+      <div class="tab-panel active" id="panel-daily"><div id="dailyContent"></div></div>
+      <div class="tab-panel"        id="panel-monthly"><div id="monthlyContent"></div></div>
     </div>
-
-    <!-- Summary Panel -->
     <div class="panel" style="padding:24px;">
       <div class="panel-title" style="margin-bottom:16px;">📊 전체 요약</div>
       <div id="summaryContent"></div>
     </div>
-
   </div>
 </main>
 
-<!-- Toast -->
 <div class="toast-wrap" id="toastWrap"></div>
 
-
-<!-- ══════════════════════════════
-     MODALS
-══════════════════════════════ -->
-
 <!-- ① 상품 추가 -->
-<div class="overlay" id="ov-addProduct" onclick="ovClick(event,'ov-addProduct')">
-  <div class="modal modal-sm" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="closeOv('ov-addProduct')">✕</button>
+<div class="overlay" id="ov-addProduct">
+  <div class="modal modal-sm">
+    <button class="modal-close" data-close="ov-addProduct">✕</button>
     <div class="modal-title">상품 추가</div>
     <div class="form-group">
       <label class="form-label">상품명</label>
@@ -676,16 +652,16 @@
       <input class="form-input num" id="ap-stock" type="number" min="0" value="0" placeholder="0">
     </div>
     <div style="display:flex;gap:9px;margin-top:20px;">
-      <button class="btn btn-secondary" style="flex:1" onclick="closeOv('ov-addProduct')">취소</button>
-      <button class="btn btn-primary"   style="flex:2" onclick="submitAddProduct()">추가하기</button>
+      <button class="btn btn-secondary" style="flex:1" data-close="ov-addProduct">취소</button>
+      <button class="btn btn-primary"   style="flex:2" id="btnSubmitAddProduct">추가하기</button>
     </div>
   </div>
 </div>
 
 <!-- ② 입출고 등록 -->
-<div class="overlay" id="ov-addTx" onclick="ovClick(event,'ov-addTx')">
-  <div class="modal" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="closeOv('ov-addTx')">✕</button>
+<div class="overlay" id="ov-addTx">
+  <div class="modal">
+    <button class="modal-close" data-close="ov-addTx">✕</button>
     <div class="modal-title">입출고 등록</div>
     <div class="form-group">
       <label class="form-label">상품 선택</label>
@@ -694,23 +670,23 @@
     <div class="form-group">
       <label class="form-label">구분</label>
       <div class="type-toggle">
-        <button class="type-btn active-in"  id="tx-in"  onclick="setTxType('in')">▲ 입고</button>
-        <button class="type-btn"            id="tx-out" onclick="setTxType('out')">▼ 출고</button>
+        <button class="type-btn active-in"  id="tx-in"  data-txtype="in">▲ 입고</button>
+        <button class="type-btn"            id="tx-out" data-txtype="out">▼ 출고</button>
       </div>
     </div>
     <div class="form-group">
       <label class="form-label">수량</label>
       <div class="qty-row">
-        <button class="qty-btn" onclick="adjQty('tx-qty',-1)">−</button>
+        <button class="qty-btn" data-qty-target="tx-qty" data-qty-delta="-1">−</button>
         <input class="form-input qty-input-big" id="tx-qty" type="number" min="1" value="1">
-        <button class="qty-btn" onclick="adjQty('tx-qty',1)">+</button>
+        <button class="qty-btn" data-qty-target="tx-qty" data-qty-delta="1">+</button>
       </div>
       <div class="presets">
-        <button class="preset-btn" onclick="setQtyVal('tx-qty',5)">5</button>
-        <button class="preset-btn" onclick="setQtyVal('tx-qty',10)">10</button>
-        <button class="preset-btn" onclick="setQtyVal('tx-qty',20)">20</button>
-        <button class="preset-btn" onclick="setQtyVal('tx-qty',50)">50</button>
-        <button class="preset-btn" onclick="setQtyVal('tx-qty',100)">100</button>
+        <button class="preset-btn" data-qty-target="tx-qty" data-qty-set="5">5</button>
+        <button class="preset-btn" data-qty-target="tx-qty" data-qty-set="10">10</button>
+        <button class="preset-btn" data-qty-target="tx-qty" data-qty-set="20">20</button>
+        <button class="preset-btn" data-qty-target="tx-qty" data-qty-set="50">50</button>
+        <button class="preset-btn" data-qty-target="tx-qty" data-qty-set="100">100</button>
       </div>
     </div>
     <div class="form-group">
@@ -722,16 +698,16 @@
       <input class="form-input" id="tx-note" type="text" placeholder="내용 입력 (선택)">
     </div>
     <div style="display:flex;gap:9px;margin-top:20px;">
-      <button class="btn btn-secondary" style="flex:1" onclick="closeOv('ov-addTx')">취소</button>
-      <button class="btn btn-primary"   style="flex:2" id="tx-submit" onclick="submitTx()">등록</button>
+      <button class="btn btn-secondary" style="flex:1" data-close="ov-addTx">취소</button>
+      <button class="btn btn-primary"   style="flex:2" id="btnSubmitTx">등록</button>
     </div>
   </div>
 </div>
 
 <!-- ③ 빠른 입출고 -->
-<div class="overlay" id="ov-quick" onclick="ovClick(event,'ov-quick')">
-  <div class="modal modal-sm" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="closeOv('ov-quick')">✕</button>
+<div class="overlay" id="ov-quick">
+  <div class="modal modal-sm">
+    <button class="modal-close" data-close="ov-quick">✕</button>
     <div class="modal-title" id="quick-title">입고</div>
     <div class="stock-display">
       <div>
@@ -746,16 +722,16 @@
     <div class="form-group">
       <label class="form-label">수량</label>
       <div class="qty-row">
-        <button class="qty-btn" onclick="adjQty('quick-qty',-1)">−</button>
+        <button class="qty-btn" data-qty-target="quick-qty" data-qty-delta="-1">−</button>
         <input class="form-input qty-input-big" id="quick-qty" type="number" min="1" value="1">
-        <button class="qty-btn" onclick="adjQty('quick-qty',1)">+</button>
+        <button class="qty-btn" data-qty-target="quick-qty" data-qty-delta="1">+</button>
       </div>
       <div class="presets">
-        <button class="preset-btn" onclick="setQtyVal('quick-qty',5)">5</button>
-        <button class="preset-btn" onclick="setQtyVal('quick-qty',10)">10</button>
-        <button class="preset-btn" onclick="setQtyVal('quick-qty',20)">20</button>
-        <button class="preset-btn" onclick="setQtyVal('quick-qty',50)">50</button>
-        <button class="preset-btn" onclick="setQtyVal('quick-qty',100)">100</button>
+        <button class="preset-btn" data-qty-target="quick-qty" data-qty-set="5">5</button>
+        <button class="preset-btn" data-qty-target="quick-qty" data-qty-set="10">10</button>
+        <button class="preset-btn" data-qty-target="quick-qty" data-qty-set="20">20</button>
+        <button class="preset-btn" data-qty-target="quick-qty" data-qty-set="50">50</button>
+        <button class="preset-btn" data-qty-target="quick-qty" data-qty-set="100">100</button>
       </div>
     </div>
     <div class="form-group">
@@ -766,52 +742,47 @@
       <label class="form-label">내용</label>
       <input class="form-input" id="quick-note" type="text" placeholder="내용 입력 (선택)">
     </div>
-    <button class="btn" style="width:100%;padding:12px;font-size:14px;margin-top:4px;border-radius:11px;" id="quick-submit-btn" onclick="submitQuick()">입고 등록</button>
+    <button class="btn" style="width:100%;padding:12px;font-size:14px;margin-top:4px;border-radius:11px;" id="quick-submit-btn">입고 등록</button>
   </div>
 </div>
 
 <!-- ④ 엑셀 다운로드 -->
-<div class="overlay" id="ov-excel" onclick="ovClick(event,'ov-excel')">
-  <div class="modal modal-sm" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="closeOv('ov-excel')">✕</button>
+<div class="overlay" id="ov-excel">
+  <div class="modal modal-sm">
+    <button class="modal-close" data-close="ov-excel">✕</button>
     <div class="modal-title">엑셀 다운로드</div>
     <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px;">포함할 항목을 선택하세요.</p>
     <div class="check-list">
-      <label class="check-item"><input type="checkbox" id="xl-name" checked><span>상품명</span></label>
-      <label class="check-item"><input type="checkbox" id="xl-cat"  checked><span>카테고리</span></label>
+      <label class="check-item"><input type="checkbox" id="xl-name"  checked><span>상품명</span></label>
+      <label class="check-item"><input type="checkbox" id="xl-cat"   checked><span>카테고리</span></label>
       <label class="check-item"><input type="checkbox" id="xl-stock" checked><span>현재 재고</span></label>
-      <label class="check-item"><input type="checkbox" id="xl-in"   checked><span>누적 입고 수량</span></label>
-      <label class="check-item"><input type="checkbox" id="xl-out"  checked><span>누적 출고 수량</span></label>
+      <label class="check-item"><input type="checkbox" id="xl-in"    checked><span>누적 입고 수량</span></label>
+      <label class="check-item"><input type="checkbox" id="xl-out"   checked><span>누적 출고 수량</span></label>
     </div>
     <div style="display:flex;gap:9px;margin-top:22px;">
-      <button class="btn btn-secondary" style="flex:1" onclick="closeOv('ov-excel')">취소</button>
-      <button class="btn btn-primary"   style="flex:2" onclick="doExcel()">📥 다운로드</button>
+      <button class="btn btn-secondary" style="flex:1" data-close="ov-excel">취소</button>
+      <button class="btn btn-primary"   style="flex:2" id="btnDoExcel">📥 다운로드</button>
     </div>
   </div>
 </div>
 
 <!-- ⑤ 상품 상세 -->
-<div class="overlay" id="ov-detail" onclick="ovClick(event,'ov-detail')">
-  <div class="modal modal-lg" onclick="event.stopPropagation()">
+<div class="overlay" id="ov-detail">
+  <div class="modal modal-lg">
     <div class="detail-head">
       <div>
         <div style="font-size:21px;font-weight:600;line-height:1.2;" id="det-name">상품명</div>
         <div style="font-size:13px;color:var(--text-muted);margin-top:4px;" id="det-meta">카테고리 · 0건</div>
       </div>
       <div class="detail-head-btns">
-        <button class="btn" style="font-size:12px;padding:6px 13px;background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.28);" onclick="deleteFromDetail()">삭제</button>
-        <button class="btn btn-secondary" style="font-size:12px;padding:6px 13px;" onclick="doProductExcel()">📥 엑셀</button>
-        <button class="modal-close" style="position:static;" onclick="closeOv('ov-detail')">✕</button>
+        <button class="btn" id="btnDeleteFromDetail" style="font-size:12px;padding:6px 13px;background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.28);">삭제</button>
+        <button class="btn btn-secondary" id="btnProductExcel" style="font-size:12px;padding:6px 13px;">📥 엑셀</button>
+        <button class="modal-close" style="position:static;" data-close="ov-detail">✕</button>
       </div>
     </div>
     <div id="det-cards" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;"></div>
     <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>날짜</th><th>구분</th><th>수량</th><th>내용</th>
-          </tr>
-        </thead>
+      <table><thead><tr><th>날짜</th><th>구분</th><th>수량</th><th>내용</th></tr></thead>
         <tbody id="det-body"></tbody>
       </table>
     </div>
@@ -819,13 +790,13 @@
 </div>
 
 <!-- ⑥ 카테고리 관리 -->
-<div class="overlay" id="ov-catMgr" onclick="ovClick(event,'ov-catMgr')">
-  <div class="modal modal-sm" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="closeOv('ov-catMgr')">✕</button>
+<div class="overlay" id="ov-catMgr">
+  <div class="modal modal-sm">
+    <button class="modal-close" data-close="ov-catMgr">✕</button>
     <div class="modal-title">카테고리 관리</div>
     <div style="display:flex;gap:8px;margin-bottom:14px;">
-      <input class="form-input" id="cat-new" type="text" placeholder="새 카테고리 이름" style="flex:1;" onkeydown="if(event.key==='Enter')addCat()">
-      <button class="btn btn-primary" onclick="addCat()">추가</button>
+      <input class="form-input" id="cat-new" type="text" placeholder="새 카테고리 이름" style="flex:1;">
+      <button class="btn btn-primary" id="btnAddCat">추가</button>
     </div>
     <div class="divider"></div>
     <div id="catList" style="max-height:300px;overflow-y:auto;"></div>
@@ -833,16 +804,16 @@
 </div>
 
 <!-- ⑦ 상품 관리 -->
-<div class="overlay" id="ov-productMgr" onclick="ovClick(event,'ov-productMgr')">
-  <div class="modal" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="closeOv('ov-productMgr')">✕</button>
+<div class="overlay" id="ov-productMgr">
+  <div class="modal">
+    <button class="modal-close" data-close="ov-productMgr">✕</button>
     <div class="modal-title">상품 추가 / 삭제</div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
-      <input class="form-input" id="pmgr-name" type="text" placeholder="상품명" onkeydown="if(event.key==='Enter')submitAddFromMgr()">
+      <input class="form-input" id="pmgr-name" type="text" placeholder="상품명">
       <div style="display:flex;gap:8px;">
         <select class="form-select" id="pmgr-cat" style="flex:1;"></select>
         <input class="form-input" id="pmgr-stock" type="number" min="0" value="0" placeholder="초기 재고" style="width:110px;">
-        <button class="btn btn-primary" onclick="submitAddFromMgr()">추가</button>
+        <button class="btn btn-primary" id="btnSubmitAddFromMgr">추가</button>
       </div>
     </div>
     <div class="divider"></div>
@@ -856,18 +827,11 @@
      FIREBASE SDK
 ══════════════════════════════ -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore,
-  collection,
-  doc,
-  onSnapshot,
-  addDoc,
-  deleteDoc,
-  writeBatch,
-  query,
-  orderBy,
-  serverTimestamp
+  getFirestore, collection, doc,
+  onSnapshot, addDoc, deleteDoc, writeBatch,
+  query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ── Firebase Config ── */
@@ -879,51 +843,23 @@ const firebaseConfig = {
   messagingSenderId: "786786130133",
   appId: "1:786786130133:web:8a89506b07e6c6d7cb6a5c"
 };
-
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
-
-/* ── Collections ── */
 const colProducts = collection(db, 'products');
 const colTxns     = collection(db, 'txns');
 const colCats     = collection(db, 'cats');
 
 /* ── State ── */
-let products = [];
-let txns     = [];
-let cats     = [];
+let products = [], txns = [], cats = [];
 let theme    = localStorage.getItem('nds_theme') || 'dark';
 let txType   = 'in';
-let quickProductId = null;
-let quickType      = 'in';
-let detailId       = null;
+let quickProductId = null, quickType = 'in', detailId = null;
 let loaded = { products: false, txns: false, cats: false };
-let catsInitialized = false; // 기본 카테고리 중복 생성 방지
-
-/* ── Sync status ── */
-function setSyncStatus(online) {
-  const dot  = document.getElementById('syncDot');
-  const text = document.getElementById('syncText');
-  if (online) {
-    dot.className    = 'sync-dot';
-    text.textContent = '실시간 연동 중';
-  } else {
-    dot.className    = 'sync-dot offline';
-    text.textContent = '연결 끊김';
-  }
-}
-
-/* ── Hide loading when all 3 listeners have fired ── */
-function checkLoaded() {
-  if (loaded.products && loaded.txns && loaded.cats) {
-    const ls = document.getElementById('loadingScreen');
-    ls.classList.add('hidden');
-    setTimeout(() => ls.style.display = 'none', 450);
-  }
-}
+let catsInitialized = false;
 
 /* ── Helpers ── */
-function today() { return new Date().toISOString().split('T')[0]; }
+const $ = id => document.getElementById(id);
+const today = () => new Date().toISOString().split('T')[0];
 
 function getStock(pid) {
   const p = products.find(x => x.id === pid);
@@ -932,124 +868,102 @@ function getStock(pid) {
     + txns.filter(t => t.productId === pid && t.type === 'in').reduce((s,t)  => s + t.qty, 0)
     - txns.filter(t => t.productId === pid && t.type === 'out').reduce((s,t) => s + t.qty, 0);
 }
-function getTotalIn(pid)  { return txns.filter(t => t.productId === pid && t.type === 'in').reduce((s,t)  => s + t.qty, 0); }
-function getTotalOut(pid) { return txns.filter(t => t.productId === pid && t.type === 'out').reduce((s,t) => s + t.qty, 0); }
+const getTotalIn  = pid => txns.filter(t => t.productId===pid && t.type==='in').reduce((s,t)  => s+t.qty, 0);
+const getTotalOut = pid => txns.filter(t => t.productId===pid && t.type==='out').reduce((s,t) => s+t.qty, 0);
 
 function catColorClass(name) {
-  const palette = ['tag-blue','tag-purple','tag-green','tag-brown'];
+  const p = ['tag-blue','tag-purple','tag-green','tag-brown'];
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
-  return palette[Math.abs(h) % palette.length];
+  return p[Math.abs(h) % p.length];
 }
-function catTag(c) { return `<span class="tag ${catColorClass(c)}">${escHtml(c)}</span>`; }
+const catTag  = c => `<span class="tag ${catColorClass(c)}">${esc(c)}</span>`;
+const esc     = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const escAttr = s => String(s).replace(/'/g,"\\'").replace(/"/g,'\\"');
+const fmtDate = str => new Date(str+'T00:00:00').toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+const fmtMonth = str => { const [y,m] = str.split('-'); return `${y}년 ${parseInt(m)}월`; };
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function escAttr(s) { return String(s).replace(/'/g, "\\'").replace(/"/g, '\\"'); }
-function fmtDate(str) {
-  const d = new Date(str + 'T00:00:00');
-  return d.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
-}
-function fmtMonth(str) {
-  const [y, m] = str.split('-');
-  return `${y}년 ${parseInt(m)}월`;
-}
-
-/* ── Toast ── */
-function toast(msg, type = 'ok') {
-  const wrap = document.getElementById('toastWrap');
-  const el   = document.createElement('div');
-  el.className   = `toast ${type}`;
+function toast(msg, type='ok') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
   el.textContent = msg;
-  wrap.appendChild(el);
-  setTimeout(() => {
-    el.style.animation = 'toastOut .25s ease forwards';
-    setTimeout(() => el.remove(), 260);
-  }, 3000);
+  $('toastWrap').appendChild(el);
+  setTimeout(() => { el.style.animation='toastOut .25s ease forwards'; setTimeout(()=>el.remove(),260); }, 3000);
 }
 
-/* ── Modal Helpers ── */
-function openOv(id)  { document.getElementById(id).classList.add('open'); }
-function closeOv(id) { document.getElementById(id).classList.remove('open'); }
-window.ovClick  = (e, id) => { if (e.target === document.getElementById(id)) closeOv(id); };
-window.closeOv  = closeOv;
-window.openDetail      = openDetail;
-window.deleteFromDetail = deleteFromDetail;
-window.openCatMgr      = openCatMgr;
-window.openProductMgr  = openProductMgr;
-window.openExcelModal  = () => openOv('ov-excel');
+/* ── Modal ── */
+const openOv  = id => $(id).classList.add('open');
+const closeOv = id => $(id).classList.remove('open');
+const isOpen  = id => $(id).classList.contains('open');
 
-/* ── Date Badge ── */
-(function renderDate() {
-  const now = new Date();
-  document.getElementById('dateBadge').textContent =
-    now.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
-})();
+/* ── Sync ── */
+function setSyncStatus(online) {
+  $('syncDot').className  = 'sync-dot' + (online ? '' : ' offline');
+  $('syncText').textContent = online ? '실시간 연동 중' : '연결 끊김';
+}
+
+/* ── Loading ── */
+function checkLoaded() {
+  if (!loaded.products || !loaded.txns || !loaded.cats) return;
+  const ls = $('loadingScreen');
+  ls.classList.add('hidden');
+  setTimeout(() => ls.style.display = 'none', 450);
+}
+
+/* ── Cat select helpers ── */
+const buildCatOptions = () => cats.map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+const refreshCatSelects = () => {
+  $('ap-cat').innerHTML   = buildCatOptions();
+  $('pmgr-cat').innerHTML = buildCatOptions();
+};
 
 /* ══════════════════════
-   RENDER FUNCTIONS
+   RENDER
 ══════════════════════ */
 function renderAll() {
-  renderInv();
-  renderDaily();
-  renderMonthly();
-  renderSummary();
-  document.getElementById('countBadge').textContent = products.length + '개 상품';
+  renderInv(); renderDaily(); renderMonthly(); renderSummary();
+  $('countBadge').textContent = products.length + '개 상품';
 }
 
-/* ── Inventory Table ── */
 function renderInv() {
-  const tbody = document.getElementById('invBody');
+  const tbody = $('invBody');
   if (!products.length) {
-    tbody.innerHTML = `<tr><td colspan="4">
-      <div class="empty">
-        <div class="empty-icon">📦</div>
-        <div class="empty-text">등록된 상품이 없습니다</div>
-        <div class="empty-sub">우측 상단의 [+ 상품 추가] 버튼을 눌러 시작하세요</div>
-      </div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty">
+      <div class="empty-icon">📦</div>
+      <div class="empty-text">등록된 상품이 없습니다</div>
+      <div class="empty-sub">우측 상단의 [+ 상품 추가] 버튼을 눌러 시작하세요</div>
+    </div></td></tr>`;
     return;
   }
   tbody.innerHTML = products.map(p => {
-    const st     = getStock(p.id);
-    const numCls = st === 0 ? 'stock-zero' : st <= 5 ? 'stock-low' : '';
+    const st = getStock(p.id);
+    const nc = st===0?'stock-zero':st<=5?'stock-low':'';
     return `<tr>
-      <td><span class="product-link" onclick="openDetail('${p.id}')">${escHtml(p.name)}</span></td>
+      <td><span class="product-link" data-pid="${p.id}">${esc(p.name)}</span></td>
       <td>${catTag(p.category)}</td>
-      <td><div class="stock-num ${numCls}">${st.toLocaleString()}</div></td>
-      <td>
-        <div style="display:flex;gap:6px;">
-          <button class="btn-in"  onclick="openQuick('${p.id}','in')">▲ 입고</button>
-          <button class="btn-out" onclick="openQuick('${p.id}','out')">▼ 출고</button>
-        </div>
-      </td>
+      <td><div class="stock-num ${nc}">${st.toLocaleString()}</div></td>
+      <td><div style="display:flex;gap:6px;">
+        <button class="btn-in"  data-pid="${p.id}" data-qtype="in">▲ 입고</button>
+        <button class="btn-out" data-pid="${p.id}" data-qtype="out">▼ 출고</button>
+      </div></td>
     </tr>`;
   }).join('');
 }
 
-/* ── Daily Stats ── */
 function renderDaily() {
-  const el = document.getElementById('dailyContent');
-  if (!txns.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">입출고 기록이 없습니다</div></div>`;
-    return;
-  }
+  const el = $('dailyContent');
+  if (!txns.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">입출고 기록이 없습니다</div></div>`; return; }
   const grouped = {};
-  txns.forEach(t => {
-    if (!grouped[t.date]) grouped[t.date] = [];
-    grouped[t.date].push(t);
-  });
-  const sorted = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
-  el.innerHTML = sorted.map(date => {
+  txns.forEach(t => { if(!grouped[t.date]) grouped[t.date]=[]; grouped[t.date].push(t); });
+  el.innerHTML = Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).map(date => {
     const rows = grouped[date].map(t => {
-      const pName  = (products.find(p => p.id === t.productId) || {}).name || '(삭제된 상품)';
-      const badge  = t.type === 'in' ? '<span class="badge-in">입고</span>' : '<span class="badge-out">출고</span>';
-      const valCls = t.type === 'in' ? 'color:var(--green)' : 'color:var(--red)';
+      const pName = (products.find(p=>p.id===t.productId)||{}).name||'(삭제된 상품)';
+      const badge = t.type==='in'?'<span class="badge-in">입고</span>':'<span class="badge-out">출고</span>';
+      const vc    = t.type==='in'?'color:var(--green)':'color:var(--red)';
       return `<tr>
-        <td style="font-size:13px;">${escHtml(pName)}</td>
-        <td>${badge}</td>
-        <td class="num" style="${valCls};font-weight:500;">${t.type==='in'?'+':'-'}${t.qty.toLocaleString()}</td>
-        <td style="font-size:12px;color:var(--text-muted);">${escHtml(t.note || '-')}</td>
+        <td style="font-size:13px;">${esc(pName)}</td><td>${badge}</td>
+        <td class="num" style="${vc};font-weight:500;">${t.type==='in'?'+':'-'}${t.qty.toLocaleString()}</td>
+        <td style="font-size:12px;color:var(--text-muted);">${esc(t.note||'-')}</td>
       </tr>`;
     }).join('');
     return `<div style="margin-bottom:20px;">
@@ -1057,480 +971,375 @@ function renderDaily() {
       <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;">
         <table><colgroup><col style="width:36%"><col style="width:14%"><col style="width:18%"><col></colgroup>
         <tbody>${rows}</tbody></table>
-      </div>
-    </div>`;
+      </div></div>`;
   }).join('');
 }
 
-/* ── Monthly Stats ── */
 function renderMonthly() {
-  const el = document.getElementById('monthlyContent');
-  if (!txns.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📊</div><div class="empty-text">데이터가 없습니다</div></div>`;
-    return;
-  }
+  const el = $('monthlyContent');
+  if (!txns.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-text">데이터가 없습니다</div></div>`; return; }
   const monthly = {};
   txns.forEach(t => {
-    const m = t.date.slice(0, 7);
-    if (!monthly[m]) monthly[m] = { in: 0, out: 0, cnt: 0 };
-    if (t.type === 'in') monthly[m].in += t.qty; else monthly[m].out += t.qty;
+    const m = t.date.slice(0,7);
+    if(!monthly[m]) monthly[m]={in:0,out:0,cnt:0};
+    if(t.type==='in') monthly[m].in+=t.qty; else monthly[m].out+=t.qty;
     monthly[m].cnt++;
   });
-  const sortedDesc = Object.keys(monthly).sort((a, b) => b.localeCompare(a));
-  const sortedAsc  = [...sortedDesc].reverse();
-  const tableRows  = sortedDesc.map(m => {
-    const d   = monthly[m];
-    const net = d.in - d.out;
-    const nc  = net >= 0 ? 'color:var(--green)' : 'color:var(--red)';
+  const desc = Object.keys(monthly).sort((a,b)=>b.localeCompare(a));
+  const asc  = [...desc].reverse();
+  const rows = desc.map(m => {
+    const d=monthly[m], net=d.in-d.out, nc=net>=0?'color:var(--green)':'color:var(--red)';
     return `<tr>
       <td>${fmtMonth(m)}</td>
       <td class="num" style="color:var(--green);">+${d.in.toLocaleString()}</td>
       <td class="num" style="color:var(--red);">-${d.out.toLocaleString()}</td>
-      <td class="num" style="${nc};font-weight:600;">${net >= 0 ? '+' : ''}${net.toLocaleString()}</td>
+      <td class="num" style="${nc};font-weight:600;">${net>=0?'+':''}${net.toLocaleString()}</td>
       <td class="num" style="color:var(--text-muted);">${d.cnt}</td>
     </tr>`;
   }).join('');
-  const maxV = Math.max(...Object.values(monthly).map(d => Math.max(d.in, d.out)), 1);
-  const bars = sortedAsc.map(m => {
-    const d  = monthly[m];
-    const ih = Math.round((d.in  / maxV) * 140);
-    const oh = Math.round((d.out / maxV) * 140);
-    const lb = m.slice(5).replace(/^0/, '');
+  const maxV = Math.max(...Object.values(monthly).map(d=>Math.max(d.in,d.out)),1);
+  const bars = asc.map(m => {
+    const d=monthly[m], ih=Math.round(d.in/maxV*140), oh=Math.round(d.out/maxV*140), lb=m.slice(5).replace(/^0/,'');
     return `<div class="bar-group">
       <div class="bar-col"><div class="bar bar-in-color"  style="height:${ih}px;" title="입고 ${d.in.toLocaleString()}"></div></div>
-      <div class="bar-col">
-        <div class="bar bar-out-color" style="height:${oh}px;" title="출고 ${d.out.toLocaleString()}"></div>
-        <div class="bar-month">${lb}월</div>
-      </div>
+      <div class="bar-col"><div class="bar bar-out-color" style="height:${oh}px;" title="출고 ${d.out.toLocaleString()}"></div><div class="bar-month">${lb}월</div></div>
     </div>`;
   }).join('');
   el.innerHTML = `
-    <table class="stats-tbl">
-      <thead><tr><th>월</th><th>총 입고</th><th>총 출고</th><th>순증감</th><th>처리건수</th></tr></thead>
-      <tbody>${tableRows}</tbody>
-    </table>
-    <div style="margin-bottom:8px;">
-      <span style="font-size:12px;color:var(--text-muted);">
-        <span style="display:inline-block;width:10px;height:10px;background:rgba(52,211,153,.55);border-radius:2px;margin-right:5px;"></span>입고
-        <span style="display:inline-block;width:10px;height:10px;background:rgba(248,113,113,.55);border-radius:2px;margin:0 5px 0 14px;"></span>출고
-      </span>
+    <table class="stats-tbl"><thead><tr><th>월</th><th>총 입고</th><th>총 출고</th><th>순증감</th><th>처리건수</th></tr></thead><tbody>${rows}</tbody></table>
+    <div style="margin-bottom:8px;font-size:12px;color:var(--text-muted);">
+      <span style="display:inline-block;width:10px;height:10px;background:rgba(52,211,153,.55);border-radius:2px;margin-right:5px;"></span>입고
+      <span style="display:inline-block;width:10px;height:10px;background:rgba(248,113,113,.55);border-radius:2px;margin:0 5px 0 14px;"></span>출고
     </div>
-    <div class="bar-chart-wrap"><div class="bar-chart">${bars}</div></div>
-  `;
+    <div class="bar-chart-wrap"><div class="bar-chart">${bars}</div></div>`;
 }
 
-/* ── Summary ── */
 function renderSummary() {
-  const el         = document.getElementById('summaryContent');
-  const totalProd  = products.length;
-  const totalStock = products.reduce((s, p) => s + getStock(p.id), 0);
-  const totalIn    = txns.filter(t => t.type === 'in').reduce((s, t)  => s + t.qty, 0);
-  const totalOut   = txns.filter(t => t.type === 'out').reduce((s, t) => s + t.qty, 0);
-  const zeroCount  = products.filter(p => getStock(p.id) === 0).length;
-  el.innerHTML = `
+  const totalProd=products.length, totalStock=products.reduce((s,p)=>s+getStock(p.id),0);
+  const totalIn=txns.filter(t=>t.type==='in').reduce((s,t)=>s+t.qty,0);
+  const totalOut=txns.filter(t=>t.type==='out').reduce((s,t)=>s+t.qty,0);
+  const zeroCount=products.filter(p=>getStock(p.id)===0).length;
+  $('summaryContent').innerHTML = `
     <div class="summary-grid">
       <div class="sum-card"><div class="sum-card-label">총 상품 수</div><div class="sum-card-val">${totalProd}</div></div>
       <div class="sum-card"><div class="sum-card-label">총 재고</div><div class="sum-card-val">${totalStock.toLocaleString()}</div></div>
       <div class="sum-card"><div class="sum-card-label">누적 입고</div><div class="sum-card-val" style="color:var(--green);">${totalIn.toLocaleString()}</div></div>
       <div class="sum-card"><div class="sum-card-label">누적 출고</div><div class="sum-card-val" style="color:var(--red);">${totalOut.toLocaleString()}</div></div>
     </div>
-    ${zeroCount > 0
-      ? `<div style="padding:10px 14px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:9px;font-size:13px;color:var(--red);">⚠️ 재고 없음: ${zeroCount}개 상품</div>`
-      : `<div style="padding:10px 14px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:9px;font-size:13px;color:var(--green);">✓ 모든 상품 재고 정상</div>`
-    }
-  `;
-}
-
-/* ── Cat Select 갱신 헬퍼 ── */
-function buildCatOptions() {
-  return cats.map(c => `<option value="${escHtml(c.name)}">${escHtml(c.name)}</option>`).join('');
-}
-function refreshAddProductCatSelect() {
-  document.getElementById('ap-cat').innerHTML = buildCatOptions();
-}
-function refreshProductMgrCatSelect() {
-  document.getElementById('pmgr-cat').innerHTML = buildCatOptions();
-}
-
-/* ══════════════════════
-   REAL-TIME LISTENERS
-══════════════════════ */
-onSnapshot(query(colProducts, orderBy('createdAt')), snap => {
-  products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  loaded.products = true;
-  checkLoaded();
-  renderAll();
-  setSyncStatus(true);
-  // 열린 팝업 즉시 갱신
-  if (document.getElementById('ov-productMgr').classList.contains('open')) renderProductMgrList();
-  if (document.getElementById('ov-detail').classList.contains('open') && detailId) refreshDetail();
-}, () => setSyncStatus(false));
-
-onSnapshot(query(colTxns, orderBy('createdAt')), snap => {
-  txns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  loaded.txns = true;
-  checkLoaded();
-  renderAll();
-  // 열린 상세 팝업 즉시 갱신
-  if (document.getElementById('ov-detail').classList.contains('open') && detailId) refreshDetail();
-}, () => setSyncStatus(false));
-
-onSnapshot(colCats, snap => {
-  // 첫 실행 시 기본 카테고리 생성 (딱 한 번만, 중복 방지)
-  if (snap.docs.length === 0 && !catsInitialized) {
-    catsInitialized = true;
-    const defaults = ['액세서리','주변기기','가구','기타'];
-    defaults.forEach(name => addDoc(colCats, { name, createdAt: serverTimestamp() }));
-    return; // 기본값 저장 후 onSnapshot이 다시 호출되므로 여기서 종료
-  }
-  catsInitialized = true;
-  cats = snap.docs.map(d => ({ id: d.id, name: d.data().name }));
-  loaded.cats = true;
-  checkLoaded();
-  renderAll();
-  // 열린 팝업 즉시 갱신
-  if (document.getElementById('ov-catMgr').classList.contains('open')) renderCatList();
-  if (document.getElementById('ov-productMgr').classList.contains('open')) refreshProductMgrCatSelect();
-  if (document.getElementById('ov-addProduct').classList.contains('open')) refreshAddProductCatSelect();
-}, () => setSyncStatus(false));
-
-/* ── Theme ── */
-function applyTheme(save_) {
-  document.documentElement.setAttribute('data-theme', theme);
-  document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
-  if (save_) localStorage.setItem('nds_theme', theme);
-}
-applyTheme(false);
-document.getElementById('themeBtn').addEventListener('click', () => {
-  theme = theme === 'dark' ? 'light' : 'dark';
-  applyTheme(true);
-});
-
-/* ── Tabs ── */
-window.switchTab = (tab) => {
-  ['daily','monthly'].forEach(t => {
-    document.getElementById('tab-'+t).classList.toggle('active', t === tab);
-    document.getElementById('panel-'+t).classList.toggle('active', t === tab);
-  });
-};
-
-/* ── Qty Helpers ── */
-window.adjQty   = (id, delta) => {
-  const el = document.getElementById(id);
-  el.value = Math.max(1, (parseInt(el.value) || 0) + delta);
-};
-window.setQtyVal = (id, v) => { document.getElementById(id).value = v; };
-
-/* ══════════════════════
-   ADD PRODUCT
-══════════════════════ */
-window.openAddProduct = () => {
-  document.getElementById('ap-name').value  = '';
-  document.getElementById('ap-stock').value = '0';
-  refreshAddProductCatSelect();
-  openOv('ov-addProduct');
-  setTimeout(() => document.getElementById('ap-name').focus(), 120);
-};
-
-window.submitAddProduct = async () => {
-  const name  = document.getElementById('ap-name').value.trim();
-  const cat   = document.getElementById('ap-cat').value;
-  const stock = Math.max(0, parseInt(document.getElementById('ap-stock').value) || 0);
-  if (!name) { toast('상품명을 입력하세요.', 'err'); return; }
-  if (!cat)  { toast('카테고리를 선택하세요.', 'err'); return; }
-  if (products.find(p => p.name === name)) { toast('이미 존재하는 상품명입니다.', 'err'); return; }
-  try {
-    await addDoc(colProducts, { name, category: cat, initialStock: stock, createdAt: serverTimestamp() });
-    closeOv('ov-addProduct');
-    toast(`"${name}" 상품이 추가되었습니다.`, 'ok');
-  } catch(e) { toast('저장 중 오류가 발생했습니다.', 'err'); }
-};
-document.getElementById('ap-name').addEventListener('keydown', e => { if (e.key === 'Enter') window.submitAddProduct(); });
-
-/* ══════════════════════
-   ADD TRANSACTION
-══════════════════════ */
-window.openAddTx = () => {
-  if (!products.length) { toast('먼저 상품을 추가해주세요.', 'err'); return; }
-  const sel = document.getElementById('tx-product');
-  sel.innerHTML = products.map(p => `<option value="${p.id}">${escHtml(p.name)}</option>`).join('');
-  document.getElementById('tx-qty').value  = '1';
-  document.getElementById('tx-date').value = today();
-  document.getElementById('tx-note').value = '';
-  setTxType('in');
-  openOv('ov-addTx');
-};
-
-function setTxType(t) {
-  txType = t;
-  document.getElementById('tx-in').className  = 'type-btn' + (t === 'in'  ? ' active-in'  : '');
-  document.getElementById('tx-out').className = 'type-btn' + (t === 'out' ? ' active-out' : '');
-}
-window.setTxType = setTxType;
-
-window.submitTx = async () => {
-  const pid  = document.getElementById('tx-product').value;
-  const qty  = parseInt(document.getElementById('tx-qty').value) || 0;
-  const date = document.getElementById('tx-date').value;
-  const note = document.getElementById('tx-note').value.trim();
-  if (!pid)    { toast('상품을 선택하세요.', 'err'); return; }
-  if (qty < 1) { toast('수량은 1 이상이어야 합니다.', 'err'); return; }
-  if (!date)   { toast('날짜를 입력하세요.', 'err'); return; }
-  try {
-    await addDoc(colTxns, { productId: pid, type: txType, qty, date, note, createdAt: serverTimestamp() });
-    closeOv('ov-addTx');
-    const p = products.find(x => x.id === pid);
-    toast(`${escHtml(p.name)} ${txType === 'in' ? '입고' : '출고'} ${qty.toLocaleString()}개 등록 완료!`, 'ok');
-  } catch(e) { toast('저장 중 오류가 발생했습니다.', 'err'); }
-};
-document.getElementById('tx-note').addEventListener('keydown', e => { if (e.key === 'Enter') window.submitTx(); });
-
-/* ══════════════════════
-   QUICK POPUP
-══════════════════════ */
-window.openQuick = (pid, type) => {
-  quickProductId = pid;
-  quickType = type;
-  const p   = products.find(x => x.id === pid);
-  const st  = getStock(pid);
-  const isIn = type === 'in';
-  document.getElementById('quick-title').textContent        = isIn ? '▲ 입고' : '▼ 출고';
-  document.getElementById('quick-product-name').textContent = p.name;
-  document.getElementById('quick-stock').textContent        = st.toLocaleString();
-  document.getElementById('quick-qty').value  = '1';
-  document.getElementById('quick-date').value = today();
-  document.getElementById('quick-note').value = '';
-  const btn = document.getElementById('quick-submit-btn');
-  btn.textContent = isIn ? '▲ 입고 등록' : '▼ 출고 등록';
-  btn.style.cssText = isIn
-    ? 'width:100%;padding:12px;font-size:14px;margin-top:4px;border-radius:11px;background:rgba(52,211,153,.18);color:var(--green);border:1px solid rgba(52,211,153,.35);font-weight:600;cursor:pointer;'
-    : 'width:100%;padding:12px;font-size:14px;margin-top:4px;border-radius:11px;background:rgba(248,113,113,.18);color:var(--red);border:1px solid rgba(248,113,113,.35);font-weight:600;cursor:pointer;';
-  openOv('ov-quick');
-};
-
-window.submitQuick = async () => {
-  const qty  = parseInt(document.getElementById('quick-qty').value) || 0;
-  const date = document.getElementById('quick-date').value;
-  const note = document.getElementById('quick-note').value.trim();
-  if (qty < 1) { toast('수량은 1 이상이어야 합니다.', 'err'); return; }
-  if (!date)   { toast('날짜를 입력하세요.', 'err'); return; }
-  try {
-    await addDoc(colTxns, { productId: quickProductId, type: quickType, qty, date, note, createdAt: serverTimestamp() });
-    closeOv('ov-quick');
-    const p = products.find(x => x.id === quickProductId);
-    toast(`${escHtml(p.name)} ${quickType === 'in' ? '입고' : '출고'} ${qty.toLocaleString()}개 등록 완료!`, 'ok');
-  } catch(e) { toast('저장 중 오류가 발생했습니다.', 'err'); }
-};
-document.getElementById('quick-note').addEventListener('keydown', e => { if (e.key === 'Enter') window.submitQuick(); });
-
-/* ══════════════════════
-   PRODUCT DETAIL
-══════════════════════ */
-function buildDetailBody(pTxns) {
-  const sorted = [...pTxns].sort((a, b) => b.date.localeCompare(a.date));
-  if (!sorted.length) return `<tr><td colspan="4"><div class="empty"><div class="empty-text">입출고 기록이 없습니다</div></div></td></tr>`;
-  return sorted.map(t => {
-    const badge = t.type === 'in' ? '<span class="badge-in">입고</span>' : '<span class="badge-out">출고</span>';
-    const vc    = t.type === 'in' ? 'color:var(--green)' : 'color:var(--red)';
-    return `<tr>
-      <td class="num" style="font-size:13px;">${t.date}</td>
-      <td>${badge}</td>
-      <td class="num" style="${vc};font-weight:500;">${t.type==='in'?'+':'-'}${t.qty.toLocaleString()}</td>
-      <td style="font-size:13px;color:var(--text-muted);">${escHtml(t.note || '-')}</td>
-    </tr>`;
-  }).join('');
-}
-
-function refreshDetail() {
-  const p = products.find(x => x.id === detailId);
-  if (!p) { closeOv('ov-detail'); return; } // 상품이 삭제된 경우 팝업 닫기
-  const pTxns = txns.filter(t => t.productId === detailId);
-  const st    = getStock(detailId);
-  const tin   = getTotalIn(detailId);
-  const tout  = getTotalOut(detailId);
-  document.getElementById('det-name').textContent = p.name;
-  document.getElementById('det-meta').textContent = `${p.category} · 총 ${pTxns.length}건`;
-  document.getElementById('det-cards').innerHTML = `
-    <div class="sum-card"><div class="sum-card-label">현재 재고</div><div class="sum-card-val">${st.toLocaleString()}</div></div>
-    <div class="sum-card"><div class="sum-card-label">누적 입고</div><div class="sum-card-val" style="color:var(--green);">${tin.toLocaleString()}</div></div>
-    <div class="sum-card"><div class="sum-card-label">누적 출고</div><div class="sum-card-val" style="color:var(--red);">${tout.toLocaleString()}</div></div>
-  `;
-  document.getElementById('det-body').innerHTML = buildDetailBody(pTxns);
-}
-
-function openDetail(pid) {
-  detailId = pid;
-  refreshDetail();
-  openOv('ov-detail');
-}
-
-window.deleteFromDetail = async () => {
-  if (!detailId) return;
-  const p = products.find(x => x.id === detailId);
-  if (!p) return;
-  if (!confirm(`"${p.name}" 상품을 삭제하시겠습니까?\n관련 입출고 기록도 함께 삭제됩니다.`)) return;
-  try {
-    const batch = writeBatch(db);
-    batch.delete(doc(db, 'products', detailId));
-    txns.filter(t => t.productId === detailId).forEach(t => batch.delete(doc(db, 'txns', t.id)));
-    await batch.commit();
-    closeOv('ov-detail');
-    detailId = null;
-    toast(`"${escHtml(p.name)}" 상품 삭제됨`, 'ok');
-  } catch(e) { toast('삭제 중 오류가 발생했습니다.', 'err'); }
-};
-
-/* ══════════════════════
-   CATEGORY MANAGER
-══════════════════════ */
-function openCatMgr() {
-  document.getElementById('cat-new').value = '';
-  renderCatList();
-  openOv('ov-catMgr');
-  setTimeout(() => document.getElementById('cat-new').focus(), 120);
+    ${zeroCount>0
+      ?`<div style="padding:10px 14px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:9px;font-size:13px;color:var(--red);">⚠️ 재고 없음: ${zeroCount}개 상품</div>`
+      :`<div style="padding:10px 14px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:9px;font-size:13px;color:var(--green);">✓ 모든 상품 재고 정상</div>`}`;
 }
 
 function renderCatList() {
-  const el = document.getElementById('catList');
-  if (!cats.length) {
-    el.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:13px;padding:14px;">카테고리가 없습니다</p>';
-    return;
-  }
-  el.innerHTML = cats.map(c => `
+  const el = $('catList');
+  if (!cats.length) { el.innerHTML='<p style="text-align:center;color:var(--text-muted);font-size:13px;padding:14px;">카테고리가 없습니다</p>'; return; }
+  el.innerHTML = cats.map(c=>`
     <div class="mgr-item">
       ${catTag(c.name)}
-      <button class="mgr-del" onclick="deleteCat('${escAttr(c.id)}','${escAttr(c.name)}')">✕</button>
-    </div>
-  `).join('');
+      <button class="mgr-del" data-cat-id="${escAttr(c.id)}" data-cat-name="${escAttr(c.name)}">✕</button>
+    </div>`).join('');
 }
-
-window.addCat = async () => {
-  const name = document.getElementById('cat-new').value.trim();
-  if (!name) { toast('카테고리 이름을 입력하세요.', 'err'); return; }
-  if (cats.find(c => c.name === name)) { toast('이미 존재하는 카테고리입니다.', 'err'); return; }
-  try {
-    await addDoc(colCats, { name, createdAt: serverTimestamp() });
-    document.getElementById('cat-new').value = '';
-    // onSnapshot이 renderCatList 자동 호출하므로 여기서 별도 호출 불필요
-    toast(`"${name}" 카테고리가 추가되었습니다.`, 'ok');
-  } catch(e) { toast('저장 중 오류가 발생했습니다.', 'err'); }
-};
-
-window.deleteCat = async (id, name) => {
-  if (products.find(p => p.category === name)) { toast('사용 중인 카테고리는 삭제할 수 없습니다.', 'err'); return; }
-  try {
-    await deleteDoc(doc(db, 'cats', id));
-    // onSnapshot이 renderCatList 자동 호출하므로 여기서 별도 호출 불필요
-    toast(`"${name}" 카테고리 삭제됨`, 'ok');
-  } catch(e) { toast('삭제 중 오류가 발생했습니다.', 'err'); }
-};
-
-/* ══════════════════════
-   PRODUCT MANAGER
-══════════════════════ */
-function openProductMgr() {
-  document.getElementById('pmgr-name').value  = '';
-  document.getElementById('pmgr-stock').value = '0';
-  refreshProductMgrCatSelect();
-  renderProductMgrList();
-  openOv('ov-productMgr');
-  setTimeout(() => document.getElementById('pmgr-name').focus(), 120);
-}
-
-window.submitAddFromMgr = async () => {
-  const name  = document.getElementById('pmgr-name').value.trim();
-  const cat   = document.getElementById('pmgr-cat').value;
-  const stock = Math.max(0, parseInt(document.getElementById('pmgr-stock').value) || 0);
-  if (!name) { toast('상품명을 입력하세요.', 'err'); return; }
-  if (!cat)  { toast('카테고리를 선택하세요.', 'err'); return; }
-  if (products.find(p => p.name === name)) { toast('이미 존재하는 상품명입니다.', 'err'); return; }
-  try {
-    await addDoc(colProducts, { name, category: cat, initialStock: stock, createdAt: serverTimestamp() });
-    document.getElementById('pmgr-name').value  = '';
-    document.getElementById('pmgr-stock').value = '0';
-    // onSnapshot이 renderProductMgrList 자동 호출하므로 여기서 별도 호출 불필요
-    toast(`"${name}" 상품이 추가되었습니다.`, 'ok');
-  } catch(e) { toast('저장 중 오류가 발생했습니다.', 'err'); }
-};
 
 function renderProductMgrList() {
-  const el = document.getElementById('productMgrList');
-  if (!products.length) {
-    el.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:13px;padding:14px;">등록된 상품이 없습니다</p>';
-    return;
-  }
-  el.innerHTML = products.map(p => {
-    const st = getStock(p.id);
-    return `<div class="mgr-item">
+  const el = $('productMgrList');
+  if (!products.length) { el.innerHTML='<p style="text-align:center;color:var(--text-muted);font-size:13px;padding:14px;">등록된 상품이 없습니다</p>'; return; }
+  el.innerHTML = products.map(p=>`
+    <div class="mgr-item">
       <div>
-        <div style="font-weight:500;">${escHtml(p.name)}</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${escHtml(p.category)} · 재고 ${st.toLocaleString()}</div>
+        <div style="font-weight:500;">${esc(p.name)}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${esc(p.category)} · 재고 ${getStock(p.id).toLocaleString()}</div>
       </div>
-      <button class="mgr-del" onclick="deleteProduct('${p.id}','${escAttr(p.name)}')">✕</button>
-    </div>`;
-  }).join('');
+      <button class="mgr-del" data-prod-id="${p.id}" data-prod-name="${escAttr(p.name)}">✕</button>
+    </div>`).join('');
 }
 
-window.deleteProduct = async (id, name) => {
-  if (!confirm(`"${name}" 상품을 삭제하시겠습니까?\n관련 입출고 기록도 함께 삭제됩니다.`)) return;
-  try {
-    const batch = writeBatch(db);
-    batch.delete(doc(db, 'products', id));
-    txns.filter(t => t.productId === id).forEach(t => batch.delete(doc(db, 'txns', t.id)));
-    await batch.commit();
-    // onSnapshot이 renderProductMgrList 자동 호출하므로 여기서 별도 호출 불필요
-    toast(`"${escHtml(name)}" 상품 삭제됨`, 'ok');
-  } catch(e) { toast('삭제 중 오류가 발생했습니다.', 'err'); }
-};
+function refreshDetail() {
+  const p = products.find(x=>x.id===detailId);
+  if (!p) { closeOv('ov-detail'); return; }
+  const pTxns=txns.filter(t=>t.productId===detailId), st=getStock(detailId), tin=getTotalIn(detailId), tout=getTotalOut(detailId);
+  $('det-name').textContent = p.name;
+  $('det-meta').textContent = `${p.category} · 총 ${pTxns.length}건`;
+  $('det-cards').innerHTML = `
+    <div class="sum-card"><div class="sum-card-label">현재 재고</div><div class="sum-card-val">${st.toLocaleString()}</div></div>
+    <div class="sum-card"><div class="sum-card-label">누적 입고</div><div class="sum-card-val" style="color:var(--green);">${tin.toLocaleString()}</div></div>
+    <div class="sum-card"><div class="sum-card-label">누적 출고</div><div class="sum-card-val" style="color:var(--red);">${tout.toLocaleString()}</div></div>`;
+  const sorted=[...pTxns].sort((a,b)=>b.date.localeCompare(a.date));
+  $('det-body').innerHTML = sorted.length
+    ? sorted.map(t=>{
+        const badge=t.type==='in'?'<span class="badge-in">입고</span>':'<span class="badge-out">출고</span>';
+        const vc=t.type==='in'?'color:var(--green)':'color:var(--red)';
+        return `<tr>
+          <td class="num" style="font-size:13px;">${t.date}</td><td>${badge}</td>
+          <td class="num" style="${vc};font-weight:500;">${t.type==='in'?'+':'-'}${t.qty.toLocaleString()}</td>
+          <td style="font-size:13px;color:var(--text-muted);">${esc(t.note||'-')}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="4"><div class="empty"><div class="empty-text">입출고 기록이 없습니다</div></div></td></tr>`;
+}
 
 /* ══════════════════════
-   EXCEL
+   FIREBASE LISTENERS
 ══════════════════════ */
-window.doExcel = () => {
-  const inc = {
-    name:  document.getElementById('xl-name').checked,
-    cat:   document.getElementById('xl-cat').checked,
-    stock: document.getElementById('xl-stock').checked,
-    tin:   document.getElementById('xl-in').checked,
-    tout:  document.getElementById('xl-out').checked,
-  };
-  if (!Object.values(inc).some(Boolean)) { toast('최소 하나 이상의 항목을 선택하세요.', 'err'); return; }
-  const header = [];
-  if (inc.name)  header.push('상품명');
-  if (inc.cat)   header.push('카테고리');
-  if (inc.stock) header.push('현재 재고');
-  if (inc.tin)   header.push('누적 입고 수량');
-  if (inc.tout)  header.push('누적 출고 수량');
-  const rows = products.map(p => {
-    const r = [];
-    if (inc.name)  r.push(p.name);
-    if (inc.cat)   r.push(p.category);
-    if (inc.stock) r.push(getStock(p.id));
-    if (inc.tin)   r.push(getTotalIn(p.id));
-    if (inc.tout)  r.push(getTotalOut(p.id));
+onSnapshot(query(colProducts,orderBy('createdAt')), snap => {
+  products = snap.docs.map(d=>({id:d.id,...d.data()}));
+  loaded.products = true; checkLoaded(); renderAll(); setSyncStatus(true);
+  if (isOpen('ov-productMgr')) renderProductMgrList();
+  if (isOpen('ov-detail') && detailId) refreshDetail();
+}, ()=>setSyncStatus(false));
+
+onSnapshot(query(colTxns,orderBy('createdAt')), snap => {
+  txns = snap.docs.map(d=>({id:d.id,...d.data()}));
+  loaded.txns = true; checkLoaded(); renderAll();
+  if (isOpen('ov-detail') && detailId) refreshDetail();
+}, ()=>setSyncStatus(false));
+
+onSnapshot(colCats, snap => {
+  if (snap.docs.length===0 && !catsInitialized) {
+    catsInitialized = true;
+    ['액세서리','주변기기','가구','기타'].forEach(name=>addDoc(colCats,{name,createdAt:serverTimestamp()}));
+    return;
+  }
+  catsInitialized = true;
+  cats = snap.docs.map(d=>({id:d.id,name:d.data().name}));
+  loaded.cats = true; checkLoaded(); renderAll();
+  if (isOpen('ov-catMgr'))     renderCatList();
+  if (isOpen('ov-productMgr')) { refreshCatSelects(); renderProductMgrList(); }
+  if (isOpen('ov-addProduct')) refreshCatSelects();
+}, ()=>setSyncStatus(false));
+
+/* ══════════════════════
+   THEME & DATE
+══════════════════════ */
+function applyTheme(save_) {
+  document.documentElement.setAttribute('data-theme', theme);
+  $('themeBtn').textContent = theme==='dark'?'☀️':'🌙';
+  if (save_) localStorage.setItem('nds_theme', theme);
+}
+applyTheme(false);
+$('dateBadge').textContent = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+
+/* ══════════════════════
+   EVENT LISTENERS
+   (모든 클릭 이벤트를 여기서 안전하게 등록)
+══════════════════════ */
+
+/* 테마 */
+$('themeBtn').addEventListener('click', ()=>{ theme=theme==='dark'?'light':'dark'; applyTheme(true); });
+
+/* 헤더 버튼 */
+$('btnOpenAddProduct').addEventListener('click', () => {
+  $('ap-name').value=''; $('ap-stock').value='0';
+  refreshCatSelects(); openOv('ov-addProduct');
+  setTimeout(()=>$('ap-name').focus(),120);
+});
+$('btnOpenAddTx').addEventListener('click', () => {
+  if (!products.length) { toast('먼저 상품을 추가해주세요.','err'); return; }
+  $('tx-product').innerHTML = products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  $('tx-qty').value='1'; $('tx-date').value=today(); $('tx-note').value='';
+  setTxType('in'); openOv('ov-addTx');
+});
+$('btnOpenExcel').addEventListener('click', ()=>openOv('ov-excel'));
+$('btnOpenProductMgr').addEventListener('click', ()=>{ refreshCatSelects(); renderProductMgrList(); openOv('ov-productMgr'); setTimeout(()=>$('pmgr-name').focus(),120); });
+$('btnOpenCatMgr').addEventListener('click', ()=>{ $('cat-new').value=''; renderCatList(); openOv('ov-catMgr'); setTimeout(()=>$('cat-new').focus(),120); });
+
+/* 탭 */
+$('tab-daily').addEventListener('click',   ()=>switchTab('daily'));
+$('tab-monthly').addEventListener('click', ()=>switchTab('monthly'));
+function switchTab(tab) {
+  ['daily','monthly'].forEach(t=>{
+    $('tab-'+t).classList.toggle('active',t===tab);
+    $('panel-'+t).classList.toggle('active',t===tab);
+  });
+}
+
+/* data-close 버튼 일괄 처리 */
+document.addEventListener('click', e => {
+  const closeTarget = e.target.closest('[data-close]');
+  if (closeTarget) closeOv(closeTarget.dataset.close);
+});
+
+/* 오버레이 바깥 클릭으로 닫기 */
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('overlay')) closeOv(e.target.id);
+});
+
+/* 수량 버튼 일괄 처리 */
+document.addEventListener('click', e => {
+  const deltaBtn = e.target.closest('[data-qty-delta]');
+  if (deltaBtn) {
+    const el = $(deltaBtn.dataset.qtyTarget);
+    el.value = Math.max(1,(parseInt(el.value)||0)+parseInt(deltaBtn.dataset.qtyDelta));
+  }
+  const setBtn = e.target.closest('[data-qty-set]');
+  if (setBtn) $(setBtn.dataset.qtyTarget).value = setBtn.dataset.qtySet;
+});
+
+/* 입출고 구분 토글 */
+$('tx-in').addEventListener('click',  ()=>setTxType('in'));
+$('tx-out').addEventListener('click', ()=>setTxType('out'));
+function setTxType(t) {
+  txType = t;
+  $('tx-in').className  = 'type-btn'+(t==='in' ?' active-in':'');
+  $('tx-out').className = 'type-btn'+(t==='out'?' active-out':'');
+}
+
+/* 상품 추가 제출 */
+$('btnSubmitAddProduct').addEventListener('click', submitAddProduct);
+$('ap-name').addEventListener('keydown', e=>{ if(e.key==='Enter') submitAddProduct(); });
+async function submitAddProduct() {
+  const name=($('ap-name').value||'').trim(), cat=$('ap-cat').value, stock=Math.max(0,parseInt($('ap-stock').value)||0);
+  if (!name) { toast('상품명을 입력하세요.','err'); return; }
+  if (!cat)  { toast('카테고리를 선택하세요.','err'); return; }
+  if (products.find(p=>p.name===name)) { toast('이미 존재하는 상품명입니다.','err'); return; }
+  try { await addDoc(colProducts,{name,category:cat,initialStock:stock,createdAt:serverTimestamp()}); closeOv('ov-addProduct'); toast(`"${name}" 상품이 추가되었습니다.`,'ok'); }
+  catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+}
+
+/* 입출고 등록 */
+$('btnSubmitTx').addEventListener('click', submitTx);
+$('tx-note').addEventListener('keydown', e=>{ if(e.key==='Enter') submitTx(); });
+async function submitTx() {
+  const pid=$('tx-product').value, qty=parseInt($('tx-qty').value)||0, date=$('tx-date').value, note=($('tx-note').value||'').trim();
+  if (!pid)    { toast('상품을 선택하세요.','err'); return; }
+  if (qty<1)   { toast('수량은 1 이상이어야 합니다.','err'); return; }
+  if (!date)   { toast('날짜를 입력하세요.','err'); return; }
+  try {
+    await addDoc(colTxns,{productId:pid,type:txType,qty,date,note,createdAt:serverTimestamp()});
+    closeOv('ov-addTx');
+    const p=products.find(x=>x.id===pid);
+    toast(`${esc(p.name)} ${txType==='in'?'입고':'출고'} ${qty.toLocaleString()}개 등록 완료!`,'ok');
+  } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+}
+
+/* 빠른 입출고 */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-qtype]');
+  if (!btn) return;
+  const pid=btn.dataset.pid, type=btn.dataset.qtype;
+  quickProductId=pid; quickType=type;
+  const p=products.find(x=>x.id===pid), st=getStock(pid), isIn=type==='in';
+  $('quick-title').textContent        = isIn?'▲ 입고':'▼ 출고';
+  $('quick-product-name').textContent = p.name;
+  $('quick-stock').textContent        = st.toLocaleString();
+  $('quick-qty').value='1'; $('quick-date').value=today(); $('quick-note').value='';
+  const submitBtn=$('quick-submit-btn');
+  submitBtn.textContent = isIn?'▲ 입고 등록':'▼ 출고 등록';
+  submitBtn.style.cssText = isIn
+    ?'width:100%;padding:12px;font-size:14px;margin-top:4px;border-radius:11px;background:rgba(52,211,153,.18);color:var(--green);border:1px solid rgba(52,211,153,.35);font-weight:600;cursor:pointer;'
+    :'width:100%;padding:12px;font-size:14px;margin-top:4px;border-radius:11px;background:rgba(248,113,113,.18);color:var(--red);border:1px solid rgba(248,113,113,.35);font-weight:600;cursor:pointer;';
+  openOv('ov-quick');
+});
+$('quick-submit-btn').addEventListener('click', submitQuick);
+$('quick-note').addEventListener('keydown', e=>{ if(e.key==='Enter') submitQuick(); });
+async function submitQuick() {
+  const qty=parseInt($('quick-qty').value)||0, date=$('quick-date').value, note=($('quick-note').value||'').trim();
+  if (qty<1)  { toast('수량은 1 이상이어야 합니다.','err'); return; }
+  if (!date)  { toast('날짜를 입력하세요.','err'); return; }
+  try {
+    await addDoc(colTxns,{productId:quickProductId,type:quickType,qty,date,note,createdAt:serverTimestamp()});
+    closeOv('ov-quick');
+    const p=products.find(x=>x.id===quickProductId);
+    toast(`${esc(p.name)} ${quickType==='in'?'입고':'출고'} ${qty.toLocaleString()}개 등록 완료!`,'ok');
+  } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+}
+
+/* 상품 클릭 → 상세 */
+document.addEventListener('click', e => {
+  const link = e.target.closest('.product-link');
+  if (!link) return;
+  detailId = link.dataset.pid;
+  refreshDetail(); openOv('ov-detail');
+});
+
+/* 상세 삭제 */
+$('btnDeleteFromDetail').addEventListener('click', async () => {
+  if (!detailId) return;
+  const p=products.find(x=>x.id===detailId);
+  if (!p) return;
+  if (!confirm(`"${p.name}" 상품을 삭제하시겠습니까?\n관련 입출고 기록도 함께 삭제됩니다.`)) return;
+  try {
+    const batch=writeBatch(db);
+    batch.delete(doc(db,'products',detailId));
+    txns.filter(t=>t.productId===detailId).forEach(t=>batch.delete(doc(db,'txns',t.id)));
+    await batch.commit();
+    closeOv('ov-detail'); detailId=null; toast(`"${esc(p.name)}" 상품 삭제됨`,'ok');
+  } catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
+});
+
+/* 상세 엑셀 */
+$('btnProductExcel').addEventListener('click', () => {
+  if (!detailId) return;
+  const p=products.find(x=>x.id===detailId); if(!p) return;
+  const pTxns=txns.filter(t=>t.productId===detailId).sort((a,b)=>b.date.localeCompare(a.date));
+  const ws=XLSX.utils.aoa_to_sheet([['날짜','구분','수량','내용'],...pTxns.map(t=>[t.date,t.type==='in'?'입고':'출고',t.qty,t.note||''])]);
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'입출고내역');
+  XLSX.writeFile(wb,`NDS_${p.name}_입출고내역.xlsx`);
+  toast('엑셀 파일이 다운로드되었습니다.','ok');
+});
+
+/* 카테고리 추가 */
+$('btnAddCat').addEventListener('click', addCat);
+$('cat-new').addEventListener('keydown', e=>{ if(e.key==='Enter') addCat(); });
+async function addCat() {
+  const name=($('cat-new').value||'').trim();
+  if (!name) { toast('카테고리 이름을 입력하세요.','err'); return; }
+  if (cats.find(c=>c.name===name)) { toast('이미 존재하는 카테고리입니다.','err'); return; }
+  try { await addDoc(colCats,{name,createdAt:serverTimestamp()}); $('cat-new').value=''; toast(`"${name}" 카테고리가 추가되었습니다.`,'ok'); }
+  catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+}
+
+/* 카테고리 삭제 (이벤트 위임) */
+$('catList').addEventListener('click', async e => {
+  const btn=e.target.closest('[data-cat-id]'); if(!btn) return;
+  const id=btn.dataset.catId, name=btn.dataset.catName;
+  if (products.find(p=>p.category===name)) { toast('사용 중인 카테고리는 삭제할 수 없습니다.','err'); return; }
+  try { await deleteDoc(doc(db,'cats',id)); toast(`"${name}" 카테고리 삭제됨`,'ok'); }
+  catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
+});
+
+/* 상품 관리 - 추가 */
+$('btnSubmitAddFromMgr').addEventListener('click', submitAddFromMgr);
+$('pmgr-name').addEventListener('keydown', e=>{ if(e.key==='Enter') submitAddFromMgr(); });
+async function submitAddFromMgr() {
+  const name=($('pmgr-name').value||'').trim(), cat=$('pmgr-cat').value, stock=Math.max(0,parseInt($('pmgr-stock').value)||0);
+  if (!name) { toast('상품명을 입력하세요.','err'); return; }
+  if (!cat)  { toast('카테고리를 선택하세요.','err'); return; }
+  if (products.find(p=>p.name===name)) { toast('이미 존재하는 상품명입니다.','err'); return; }
+  try { await addDoc(colProducts,{name,category:cat,initialStock:stock,createdAt:serverTimestamp()}); $('pmgr-name').value=''; $('pmgr-stock').value='0'; toast(`"${name}" 상품이 추가되었습니다.`,'ok'); }
+  catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
+}
+
+/* 상품 관리 - 삭제 (이벤트 위임) */
+$('productMgrList').addEventListener('click', async e => {
+  const btn=e.target.closest('[data-prod-id]'); if(!btn) return;
+  const id=btn.dataset.prodId, name=btn.dataset.prodName;
+  if (!confirm(`"${name}" 상품을 삭제하시겠습니까?\n관련 입출고 기록도 함께 삭제됩니다.`)) return;
+  try {
+    const batch=writeBatch(db);
+    batch.delete(doc(db,'products',id));
+    txns.filter(t=>t.productId===id).forEach(t=>batch.delete(doc(db,'txns',t.id)));
+    await batch.commit(); toast(`"${esc(name)}" 상품 삭제됨`,'ok');
+  } catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
+});
+
+/* 전체 엑셀 */
+$('btnDoExcel').addEventListener('click', () => {
+  const inc={name:$('xl-name').checked,cat:$('xl-cat').checked,stock:$('xl-stock').checked,tin:$('xl-in').checked,tout:$('xl-out').checked};
+  if (!Object.values(inc).some(Boolean)) { toast('최소 하나 이상의 항목을 선택하세요.','err'); return; }
+  const header=[];
+  if(inc.name) header.push('상품명'); if(inc.cat) header.push('카테고리');
+  if(inc.stock) header.push('현재 재고'); if(inc.tin) header.push('누적 입고 수량'); if(inc.tout) header.push('누적 출고 수량');
+  const rows=products.map(p=>{
+    const r=[];
+    if(inc.name) r.push(p.name); if(inc.cat) r.push(p.category);
+    if(inc.stock) r.push(getStock(p.id)); if(inc.tin) r.push(getTotalIn(p.id)); if(inc.tout) r.push(getTotalOut(p.id));
     return r;
   });
-  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, '재고현황');
-  XLSX.writeFile(wb, 'NDS_재고현황.xlsx');
-  closeOv('ov-excel');
-  toast('엑셀 파일이 다운로드되었습니다.', 'ok');
-};
-
-window.doProductExcel = () => {
-  if (!detailId) return;
-  const p = products.find(x => x.id === detailId);
-  if (!p) return;
-  const pTxns = txns.filter(t => t.productId === detailId).sort((a, b) => b.date.localeCompare(a.date));
-  const header = ['날짜','구분','수량','내용'];
-  const rows   = pTxns.map(t => [t.date, t.type === 'in' ? '입고' : '출고', t.qty, t.note || '']);
-  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, '입출고내역');
-  XLSX.writeFile(wb, `NDS_${p.name}_입출고내역.xlsx`);
-  toast('엑셀 파일이 다운로드되었습니다.', 'ok');
-};
+  const ws=XLSX.utils.aoa_to_sheet([header,...rows]), wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'재고현황'); XLSX.writeFile(wb,'NDS_재고현황.xlsx');
+  closeOv('ov-excel'); toast('엑셀 파일이 다운로드되었습니다.','ok');
+});
 
 </script>
 </body>
