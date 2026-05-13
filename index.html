@@ -270,6 +270,15 @@
     }
     .product-link:hover { color: var(--purple); text-decoration: underline; }
 
+    .tx-link {
+      color: var(--text);
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 1px dashed var(--text-dim);
+      transition: color .15s;
+    }
+    .tx-link:hover { color: var(--blue); border-bottom-color: var(--blue); }
+
     /* ── Stock Number ── */
     .stock-num {
       font-family: 'Pretendard', sans-serif;
@@ -562,10 +571,56 @@
       .row2 { grid-template-columns: 1fr; }
       .summary-grid { grid-template-columns: 1fr 1fr; }
     }
-    @media (max-width: 600px) {
-      .header { padding: 0 14px; }
-      .main { padding: 78px 12px 32px; }
+
+    @media (max-width: 768px) {
+      body { font-size: 13px; }
+
+      /* Header */
+      .header { padding: 0 14px; height: 56px; }
+      .header-title { font-size: 15px; }
+      .header-subtitle { display: none; }
       .date-badge { display: none; }
+      .sync-badge { display: none; }
+      .count-badge { display: none; }
+      .header-right { gap: 6px; }
+      .header-right .btn { padding: 7px 10px; font-size: 12px; }
+
+      /* Main */
+      .main { padding: 70px 12px 28px; }
+
+      /* Panel */
+      .panel + .panel { margin-top: 14px; }
+      .panel-head { padding: 14px 16px; flex-wrap: wrap; gap: 8px; }
+      .row2 { gap: 14px; margin-top: 14px; }
+
+      /* Table */
+      .table-wrap { -webkit-overflow-scrolling: touch; }
+      thead th { padding: 9px 12px; font-size: 10px; }
+      tbody td { padding: 11px 12px; }
+
+      /* Tab */
+      .tab-bar { padding: 0 12px; }
+      .tab-btn { padding: 11px 14px; font-size: 12px; }
+      .tab-panel { padding: 16px 14px; }
+
+      /* Summary cards */
+      .sum-card { padding: 12px 14px; }
+      .sum-card-val { font-size: 18px; }
+
+      /* Detail modal 3-col → 2-col */
+      #det-cards { grid-template-columns: 1fr 1fr !important; }
+
+      /* Modal */
+      .modal { width: 92vw !important; padding: 22px 18px; border-radius: 16px; }
+      .modal-title { font-size: 16px; margin-bottom: 16px; }
+
+      /* Empty state */
+      .empty { padding: 36px 16px; }
+      .empty-icon { font-size: 36px; }
+
+      /* Toast */
+      .toast-wrap { bottom: 16px; }
+      .toast { white-space: normal; text-align: center; max-width: 85vw; }
     }
   </style>
 </head>
@@ -610,6 +665,8 @@
       <table id="invTable">
         <thead>
           <tr>
+            <th id="th-name" class="sortable-col">상품명 <span class="sort-indicator" id="si-name"></span><button class="col-add" id="btnOpenProductMgr" title="상품 추가/삭제">＋</button></th>
+            <th id="th-cat" class="sortable-col">카테고리 <span class="sort-indicator" id="si-cat"></span><button class="col-add" id="btnOpenCatMgr" title="카테고리 관리">＋</button></th>
             <th id="th-name" class="sortable-col">상품명 <span class="sort-indicator" id="si-name"></span><button class="col-add" id="btnOpenProductMgr" title="상품 추가/삭제">＋</button></th>
             <th id="th-cat" class="sortable-col">카테고리 <span class="sort-indicator" id="si-cat"></span><button class="col-add" id="btnOpenCatMgr" title="카테고리 관리">＋</button></th>
             <th>현재 재고</th>
@@ -714,12 +771,12 @@
   <div class="modal modal-sm">
     <button class="modal-close" data-close="ov-quick">✕</button>
     <div class="modal-title" id="quick-title">입고</div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label class="form-label">상품</label>
+      <select class="form-select" id="quick-product-select"></select>
+    </div>
     <div class="stock-display">
       <div>
-        <div class="stock-display-label">상품</div>
-        <div style="font-weight:600;" id="quick-product-name">-</div>
-      </div>
-      <div style="text-align:right;">
         <div class="stock-display-label">현재 재고</div>
         <div class="stock-display-val" id="quick-stock">0</div>
       </div>
@@ -828,6 +885,53 @@
 </div>
 
 
+<!-- ⑧ 입출고 수정 -->
+<div class="overlay" id="ov-editTx">
+  <div class="modal">
+    <button class="modal-close" data-close="ov-editTx">✕</button>
+    <div class="modal-title">입출고 수정</div>
+    <div class="form-group">
+      <label class="form-label">상품</label>
+      <select class="form-select" id="edit-product"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">구분</label>
+      <div class="type-toggle">
+        <button class="type-btn active-in" id="edit-in">▲ 입고</button>
+        <button class="type-btn"           id="edit-out">▼ 출고</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">수량</label>
+      <div class="qty-row">
+        <button class="qty-btn" data-qty-target="edit-qty" data-qty-delta="-1">−</button>
+        <input class="form-input qty-input-big" id="edit-qty" type="number" min="1" value="1">
+        <button class="qty-btn" data-qty-target="edit-qty" data-qty-delta="1">+</button>
+      </div>
+      <div class="presets">
+        <button class="preset-btn" data-qty-target="edit-qty" data-qty-set="5">5</button>
+        <button class="preset-btn" data-qty-target="edit-qty" data-qty-set="10">10</button>
+        <button class="preset-btn" data-qty-target="edit-qty" data-qty-set="20">20</button>
+        <button class="preset-btn" data-qty-target="edit-qty" data-qty-set="50">50</button>
+        <button class="preset-btn" data-qty-target="edit-qty" data-qty-set="100">100</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">날짜</label>
+      <input class="form-input" id="edit-date" type="date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">내용</label>
+      <input class="form-input" id="edit-note" type="text" placeholder="내용 입력 (선택)">
+    </div>
+    <div style="display:flex;gap:9px;margin-top:20px;">
+      <button class="btn" id="btnDeleteTx" style="padding:8px 14px;background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.28);">삭제</button>
+      <button class="btn btn-secondary" style="flex:1" data-close="ov-editTx">취소</button>
+      <button class="btn btn-primary"   style="flex:2" id="btnSubmitEditTx">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════════════════════
      FIREBASE SDK
 ══════════════════════════════ -->
@@ -835,7 +939,7 @@
 import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, doc,
-  onSnapshot, addDoc, deleteDoc, writeBatch,
+  onSnapshot, addDoc, deleteDoc, updateDoc, writeBatch,
   query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -924,6 +1028,12 @@ const refreshCatSelects = () => {
   $('pmgr-cat').innerHTML = buildCatOptions();
 };
 
+function updateSortIndicators() {
+  const siName = $('si-name'), siCat = $('si-cat');
+  if (siName) { siName.textContent = invSortKey==='name' ? (invSortDir==='asc'?'▲':'▼') : '↕'; siName.className = 'sort-indicator'+(invSortKey==='name'?' active':''); }
+  if (siCat)  { siCat.textContent  = invSortKey==='category' ? (invSortDir==='asc'?'▲':'▼') : '↕'; siCat.className  = 'sort-indicator'+(invSortKey==='category'?' active':''); }
+}
+
 /* ══════════════════════
    RENDER
 ══════════════════════ */
@@ -976,12 +1086,13 @@ function renderDaily() {
   const grouped = {};
   txns.forEach(t => { if(!grouped[t.date]) grouped[t.date]=[]; grouped[t.date].push(t); });
   el.innerHTML = Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).slice(0,5).map(date => {
+  el.innerHTML = Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).slice(0,5).map(date => {
     const rows = grouped[date].map(t => {
       const pName = (products.find(p=>p.id===t.productId)||{}).name||'(삭제된 상품)';
       const badge = t.type==='in'?'<span class="badge-in">입고</span>':'<span class="badge-out">출고</span>';
       const vc    = t.type==='in'?'color:var(--green)':'color:var(--red)';
       return `<tr>
-        <td style="font-size:13px;">${esc(pName)}</td><td>${badge}</td>
+        <td style="font-size:13px;"><span class="tx-link" data-txid="${t.id}">${esc(pName)}</span></td><td>${badge}</td>
         <td class="num" style="${vc};font-weight:500;">${t.type==='in'?'+':'-'}${t.qty.toLocaleString()}</td>
         <td style="font-size:12px;color:var(--text-muted);">${esc(t.note||'-')}</td>
       </tr>`;
@@ -1089,7 +1200,7 @@ function refreshDetail() {
     ? sorted.map(t=>{
         const badge=t.type==='in'?'<span class="badge-in">입고</span>':'<span class="badge-out">출고</span>';
         const vc=t.type==='in'?'color:var(--green)':'color:var(--red)';
-        return `<tr>
+        return `<tr class="det-tx-row" data-txid="${t.id}">
           <td class="num" style="font-size:13px;">${t.date}</td><td>${badge}</td>
           <td class="num" style="${vc};font-weight:500;">${t.type==='in'?'+':'-'}${t.qty.toLocaleString()}</td>
           <td style="font-size:13px;color:var(--text-muted);">${esc(t.note||'-')}</td>
@@ -1160,6 +1271,22 @@ $('btnOpenAddTx').addEventListener('click', () => {
   setTxType('in'); openOv('ov-addTx');
 });
 $('btnOpenExcel').addEventListener('click', ()=>openOv('ov-excel'));
+$('btnOpenProductMgr').addEventListener('click', e=>{ e.stopPropagation(); refreshCatSelects(); renderProductMgrList(); openOv('ov-productMgr'); setTimeout(()=>$('pmgr-name').focus(),120); });
+$('btnOpenCatMgr').addEventListener('click', e=>{ e.stopPropagation(); $('cat-new').value=''; renderCatList(); openOv('ov-catMgr'); setTimeout(()=>$('cat-new').focus(),120); });
+
+/* 재고 테이블 정렬 */
+$('th-name').addEventListener('click', e => {
+  if (e.target.closest('.col-add')) return;
+  if (invSortKey==='name') invSortDir = invSortDir==='asc'?'desc':'asc';
+  else { invSortKey='name'; invSortDir='asc'; }
+  renderInv();
+});
+$('th-cat').addEventListener('click', e => {
+  if (e.target.closest('.col-add')) return;
+  if (invSortKey==='category') invSortDir = invSortDir==='asc'?'desc':'asc';
+  else { invSortKey='category'; invSortDir='asc'; }
+  renderInv();
+});
 $('btnOpenProductMgr').addEventListener('click', e=>{ e.stopPropagation(); refreshCatSelects(); renderProductMgrList(); openOv('ov-productMgr'); setTimeout(()=>$('pmgr-name').focus(),120); });
 $('btnOpenCatMgr').addEventListener('click', e=>{ e.stopPropagation(); $('cat-new').value=''; renderCatList(); openOv('ov-catMgr'); setTimeout(()=>$('cat-new').focus(),120); });
 
@@ -1251,11 +1378,12 @@ document.addEventListener('click', e => {
   const btn = e.target.closest('[data-qtype]');
   if (!btn) return;
   const pid=btn.dataset.pid, type=btn.dataset.qtype;
-  quickProductId=pid; quickType=type;
-  const p=products.find(x=>x.id===pid), st=getStock(pid), isIn=type==='in';
-  $('quick-title').textContent        = isIn?'▲ 입고':'▼ 출고';
-  $('quick-product-name').textContent = p.name;
-  $('quick-stock').textContent        = st.toLocaleString();
+  quickType=type;
+  const isIn=type==='in';
+  $('quick-title').textContent = isIn?'▲ 입고':'▼ 출고';
+  $('quick-product-select').innerHTML = products.map(p=>`<option value="${p.id}"${p.id===pid?' selected':''}>${esc(p.name)}</option>`).join('');
+  quickProductId=pid;
+  $('quick-stock').textContent = getStock(pid).toLocaleString();
   $('quick-qty').value='1'; $('quick-date').value=today(); $('quick-note').value='';
   const submitBtn=$('quick-submit-btn');
   submitBtn.textContent = isIn?'▲ 입고 등록':'▼ 출고 등록';
@@ -1264,16 +1392,21 @@ document.addEventListener('click', e => {
     :'width:100%;padding:12px;font-size:14px;margin-top:4px;border-radius:11px;background:rgba(248,113,113,.18);color:var(--red);border:1px solid rgba(248,113,113,.35);font-weight:600;cursor:pointer;';
   openOv('ov-quick');
 });
+$('quick-product-select').addEventListener('change', () => {
+  quickProductId = $('quick-product-select').value;
+  $('quick-stock').textContent = getStock(quickProductId).toLocaleString();
+});
 $('quick-submit-btn').addEventListener('click', submitQuick);
 $('quick-note').addEventListener('keydown', e=>{ if(e.key==='Enter') submitQuick(); });
 async function submitQuick() {
+  const pid=$('quick-product-select').value;
   const qty=parseInt($('quick-qty').value)||0, date=$('quick-date').value, note=($('quick-note').value||'').trim();
   if (qty<1)  { toast('수량은 1 이상이어야 합니다.','err'); return; }
   if (!date)  { toast('날짜를 입력하세요.','err'); return; }
   try {
-    await addDoc(colTxns,{productId:quickProductId,type:quickType,qty,date,note,createdAt:serverTimestamp()});
+    await addDoc(colTxns,{productId:pid,type:quickType,qty,date,note,createdAt:serverTimestamp()});
     closeOv('ov-quick');
-    const p=products.find(x=>x.id===quickProductId);
+    const p=products.find(x=>x.id===pid);
     toast(`${esc(p.name)} ${quickType==='in'?'입고':'출고'} ${qty.toLocaleString()}개 등록 완료!`,'ok');
   } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
 }
@@ -1284,6 +1417,57 @@ document.addEventListener('click', e => {
   if (!link) return;
   detailId = link.dataset.pid;
   refreshDetail(); openOv('ov-detail');
+});
+
+/* 입출고 기록 클릭 → 수정 (날짜별 현황 + 상품 상세 모달 공통) */
+function openEditTxById(txId) {
+  const t = txns.find(x=>x.id===txId);
+  if (!t) return;
+  editTxId = t.id;
+  $('edit-product').innerHTML = products.map(p=>`<option value="${p.id}"${p.id===t.productId?' selected':''}>${esc(p.name)}</option>`).join('');
+  setEditTxType(t.type);
+  $('edit-qty').value  = t.qty;
+  $('edit-date').value = t.date;
+  $('edit-note').value = t.note || '';
+  openOv('ov-editTx');
+}
+document.addEventListener('click', e => {
+  const link = e.target.closest('.tx-link');
+  if (link) { openEditTxById(link.dataset.txid); return; }
+  const row = e.target.closest('.det-tx-row');
+  if (row) openEditTxById(row.dataset.txid);
+});
+
+$('edit-in').addEventListener('click',  ()=>setEditTxType('in'));
+$('edit-out').addEventListener('click', ()=>setEditTxType('out'));
+function setEditTxType(t) {
+  editTxType = t;
+  $('edit-in').className  = 'type-btn'+(t==='in' ?' active-in':'');
+  $('edit-out').className = 'type-btn'+(t==='out'?' active-out':'');
+}
+
+$('btnSubmitEditTx').addEventListener('click', submitEditTx);
+$('edit-note').addEventListener('keydown', e=>{ if(e.key==='Enter') submitEditTx(); });
+async function submitEditTx() {
+  const pid=$('edit-product').value, qty=parseInt($('edit-qty').value)||0, date=$('edit-date').value, note=($('edit-note').value||'').trim();
+  if (!pid)  { toast('상품을 선택하세요.','err'); return; }
+  if (qty<1) { toast('수량은 1 이상이어야 합니다.','err'); return; }
+  if (!date) { toast('날짜를 입력하세요.','err'); return; }
+  try {
+    await updateDoc(doc(db,'txns',editTxId), {productId:pid, type:editTxType, qty, date, note});
+    closeOv('ov-editTx');
+    toast('입출고 내역이 수정되었습니다.','ok');
+  } catch(e) { toast('수정 중 오류가 발생했습니다.','err'); }
+}
+
+$('btnDeleteTx').addEventListener('click', async () => {
+  if (!editTxId) return;
+  if (!confirm('이 입출고 기록을 삭제하시겠습니까?')) return;
+  try {
+    await deleteDoc(doc(db,'txns',editTxId));
+    closeOv('ov-editTx');
+    toast('입출고 기록이 삭제되었습니다.','ok');
+  } catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
 });
 
 /* 상세 삭제 */
