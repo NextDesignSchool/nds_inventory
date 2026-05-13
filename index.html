@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <style>
-    /* ── CSS Variables ── */
     :root {
       --blue: #4f8ef7;
       --purple: #7c5cfc;
@@ -39,8 +38,6 @@
       --header-bg: rgba(240,242,247,0.9);
       --shadow: rgba(0,0,0,0.08);
     }
-
-    /* ── Reset ── */
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -59,7 +56,6 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-    /* ── Loading Screen ── */
     #loadingScreen {
       position: fixed; inset: 0; z-index: 9999;
       background: var(--bg);
@@ -71,17 +67,10 @@
     #loadingScreen.hidden { opacity: 0; pointer-events: none; }
     .loading-logo {
       background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
-      color: #fff;
-      font-weight: 600;
-      font-size: 20px;
-      letter-spacing: 2px;
-      padding: 10px 22px;
-      border-radius: 12px;
+      color: #fff; font-weight: 600; font-size: 20px;
+      letter-spacing: 2px; padding: 10px 22px; border-radius: 12px;
     }
-    .loading-text {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
+    .loading-text { font-size: 13px; color: var(--text-muted); }
     .loading-spinner {
       width: 28px; height: 28px;
       border: 2px solid var(--border);
@@ -91,27 +80,18 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Sync indicator ── */
     .sync-dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: var(--green);
-      display: inline-block;
-      margin-right: 5px;
-      animation: pulse 2s ease-in-out infinite;
+      background: var(--green); display: inline-block;
+      margin-right: 5px; animation: pulse 2s ease-in-out infinite;
     }
     .sync-dot.offline { background: var(--orange); animation: none; }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: .4; }
-    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
 
-    /* ── Header ── */
     .header {
       position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-      height: 62px;
-      background: var(--header-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      height: 62px; background: var(--header-bg);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 28px;
@@ -119,524 +99,246 @@
     .header-left { display: flex; align-items: center; gap: 14px; }
     .nds-logo {
       background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
-      color: #fff;
-      font-weight: 600;
-      font-size: 14px;
-      letter-spacing: 1px;
-      padding: 5px 12px;
-      border-radius: 9px;
+      color: #fff; font-weight: 600; font-size: 14px;
+      letter-spacing: 1px; padding: 5px 12px; border-radius: 9px;
     }
     .header-title-wrap { display: flex; flex-direction: column; }
     .header-title { font-weight: 600; font-size: 17px; line-height: 1.2; }
     .header-subtitle { font-weight: 400; font-size: 11px; color: var(--text-muted); letter-spacing: .3px; }
     .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-
     .date-badge {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 12px;
-      font-weight: 500;
-      padding: 5px 13px;
-      border-radius: 20px;
-      white-space: nowrap;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-muted); font-size: 12px; font-weight: 500;
+      padding: 5px 13px; border-radius: 20px; white-space: nowrap;
     }
     .sync-badge {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 12px;
-      font-weight: 500;
-      padding: 5px 13px;
-      border-radius: 20px;
-      white-space: nowrap;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-muted); font-size: 12px; font-weight: 500;
+      padding: 5px 13px; border-radius: 20px; white-space: nowrap;
       display: flex; align-items: center;
     }
     .theme-btn {
-      width: 36px; height: 36px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      cursor: pointer;
+      width: 36px; height: 36px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-      transition: background .2s;
+      font-size: 16px; transition: background .2s;
     }
     .theme-btn:hover { background: var(--surface3); }
     .count-badge {
-      background: rgba(79,142,247,.12);
-      border: 1px solid rgba(79,142,247,.25);
-      color: var(--blue);
-      font-size: 12px;
-      font-weight: 600;
-      padding: 5px 14px;
-      border-radius: 20px;
+      background: rgba(79,142,247,.12); border: 1px solid rgba(79,142,247,.25);
+      color: var(--blue); font-size: 12px; font-weight: 600;
+      padding: 5px 14px; border-radius: 20px;
     }
-
-    /* ── Buttons ── */
     .btn {
       display: inline-flex; align-items: center; gap: 5px;
-      padding: 8px 16px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: all .18s;
-      white-space: nowrap;
-      outline: none;
+      padding: 8px 16px; border-radius: 10px; font-size: 13px;
+      font-weight: 600; cursor: pointer; border: none;
+      transition: all .18s; white-space: nowrap; outline: none;
     }
     .btn-primary {
       background: linear-gradient(135deg, var(--blue), var(--purple));
-      color: #fff;
-      box-shadow: 0 2px 12px rgba(79,142,247,.3);
+      color: #fff; box-shadow: 0 2px 12px rgba(79,142,247,.3);
     }
     .btn-primary:hover { opacity: .88; transform: translateY(-1px); }
-    .btn-secondary {
-      background: var(--surface2);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
     .btn-secondary:hover { background: var(--surface3); }
-    .btn-ghost {
-      background: none; border: none;
-      color: var(--text-muted); cursor: pointer;
-      padding: 4px 8px; border-radius: 6px;
-      font-size: 13px; font-weight: 500;
-      transition: all .15s;
-    }
-    .btn-ghost:hover { background: var(--surface2); color: var(--text); }
 
-    /* ── Main ── */
-    .main {
-      max-width: 1380px;
-      margin: 0 auto;
-      padding: 86px 24px 40px;
-    }
-
-    /* ── Panel ── */
+    .main { max-width: 1380px; margin: 0 auto; padding: 86px 24px 40px; }
     .panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      box-shadow: 0 2px 20px var(--shadow);
-      overflow: hidden;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; box-shadow: 0 2px 20px var(--shadow); overflow: hidden;
     }
     .panel + .panel { margin-top: 20px; }
     .panel-head {
-      padding: 18px 24px;
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 12px;
+      padding: 18px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
     }
     .panel-title { font-weight: 600; font-size: 15px; }
-
-    /* ── Table ── */
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; }
     thead th {
-      background: var(--surface2);
-      padding: 10px 18px;
-      text-align: left;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: .6px;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
+      background: var(--surface2); padding: 10px 18px;
+      text-align: left; font-size: 11px; font-weight: 600;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: .6px; border-bottom: 1px solid var(--border); white-space: nowrap;
     }
     tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: var(--surface2); }
     tbody td { padding: 14px 18px; vertical-align: middle; }
-
     .col-add {
-      background: none; border: none;
-      color: var(--text-muted); cursor: pointer;
-      font-size: 14px; font-weight: 600;
-      padding: 0 5px; margin-left: 4px;
-      border-radius: 4px;
-      line-height: 1;
-      transition: all .15s;
+      background: none; border: none; color: var(--text-muted); cursor: pointer;
+      font-size: 14px; font-weight: 600; padding: 0 5px; margin-left: 4px;
+      border-radius: 4px; line-height: 1; transition: all .15s;
     }
     .col-add:hover { background: var(--surface3); color: var(--text); }
-
     .product-link {
-      color: var(--blue);
-      font-weight: 500;
-      cursor: pointer;
-      transition: color .15s;
+      color: var(--blue); font-weight: 500; cursor: pointer; transition: color .15s;
     }
     .product-link:hover { color: var(--purple); text-decoration: underline; }
-
     .tx-link {
-      color: var(--text);
-      font-weight: 500;
-      cursor: pointer;
-      border-bottom: 1px dashed var(--text-dim);
-      transition: color .15s;
+      color: var(--text); font-weight: 500; cursor: pointer;
+      border-bottom: 1px dashed var(--text-dim); transition: color .15s;
     }
     .tx-link:hover { color: var(--blue); border-bottom-color: var(--blue); }
-
-    /* ── Stock Number ── */
-    .stock-num {
-      font-family: 'Pretendard', sans-serif;
-      font-size: 17px;
-      font-weight: 500;
-      line-height: 1;
-    }
+    .stock-num { font-family: 'Pretendard', sans-serif; font-size: 17px; font-weight: 500; line-height: 1; }
     .stock-zero { color: var(--red); }
     .stock-low  { color: var(--orange); }
-
-    /* ── Tags / Badges ── */
-    .tag {
-      display: inline-flex; align-items: center;
-      padding: 3px 10px; border-radius: 20px;
-      font-size: 11px; font-weight: 600;
-    }
+    .tag { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
     .tag-blue   { background: rgba(79,142,247,.14);  color: var(--blue); }
     .tag-purple { background: rgba(124,92,252,.14);  color: var(--purple); }
     .tag-green  { background: rgba(52,211,153,.14);  color: var(--green); }
     .tag-brown  { background: rgba(180,118,60,.14);  color: #b4763c; }
-    .tag-orange { background: rgba(251,146,60,.14);  color: var(--orange); }
-    .tag-red    { background: rgba(248,113,113,.14); color: var(--red); }
-    .tag-teal   { background: rgba(45,212,191,.14);  color: #2dd4bf; }
-    .tag-gray   { background: rgba(148,163,184,.14); color: #94a3b8; }
-
     .badge-in  { background: rgba(52,211,153,.14); color: var(--green); padding: 2px 9px; border-radius: 5px; font-size: 11px; font-weight: 600; }
     .badge-out { background: rgba(248,113,113,.14); color: var(--red);  padding: 2px 9px; border-radius: 5px; font-size: 11px; font-weight: 600; }
-
-    /* ── In/Out Btns in Table ── */
     .btn-in {
-      padding: 5px 11px; border-radius: 7px;
-      background: rgba(52,211,153,.12);
-      color: var(--green);
-      border: 1px solid rgba(52,211,153,.28);
-      font-size: 12px; font-weight: 600;
-      cursor: pointer; transition: all .15s;
+      padding: 5px 11px; border-radius: 7px; background: rgba(52,211,153,.12);
+      color: var(--green); border: 1px solid rgba(52,211,153,.28);
+      font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s;
     }
     .btn-in:hover { background: rgba(52,211,153,.22); }
     .btn-out {
-      padding: 5px 11px; border-radius: 7px;
-      background: rgba(248,113,113,.12);
-      color: var(--red);
-      border: 1px solid rgba(248,113,113,.28);
-      font-size: 12px; font-weight: 600;
-      cursor: pointer; transition: all .15s;
+      padding: 5px 11px; border-radius: 7px; background: rgba(248,113,113,.12);
+      color: var(--red); border: 1px solid rgba(248,113,113,.28);
+      font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s;
     }
     .btn-out:hover { background: rgba(248,113,113,.22); }
-
-    /* ── Tabs ── */
     .tab-bar {
-      display: flex; gap: 0;
-      padding: 0 24px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
+      display: flex; padding: 0 24px;
+      border-bottom: 1px solid var(--border); background: var(--surface);
     }
     .tab-btn {
-      padding: 14px 20px;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-muted);
-      cursor: pointer;
-      border: none;
-      background: none;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -1px;
-      transition: all .15s;
+      padding: 14px 20px; font-size: 13px; font-weight: 500;
+      color: var(--text-muted); cursor: pointer; border: none; background: none;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s;
     }
     .tab-btn:hover { color: var(--text); }
     .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
     .tab-panel { display: none; padding: 24px; }
     .tab-panel.active { display: block; }
-
-    /* ── Stats Table ── */
     .stats-tbl { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
-    .stats-tbl th, .stats-tbl td {
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border);
-      font-size: 13px;
-      text-align: right;
-    }
+    .stats-tbl th, .stats-tbl td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; text-align: right; }
     .stats-tbl th:first-child, .stats-tbl td:first-child { text-align: left; font-weight: 500; }
     .stats-tbl thead th { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; background: var(--surface2); }
     .stats-tbl tbody tr:last-child td { border-bottom: none; }
-
-    /* ── Bar Chart ── */
     .bar-chart-wrap { overflow-x: auto; padding-bottom: 4px; }
-    .bar-chart {
-      display: flex; gap: 10px;
-      align-items: flex-end;
-      min-height: 170px;
-      padding: 8px 4px 0;
-    }
+    .bar-chart { display: flex; gap: 10px; align-items: flex-end; min-height: 170px; padding: 8px 4px 0; }
     .bar-group { display: flex; gap: 3px; align-items: flex-end; flex-shrink: 0; }
     .bar-col { display: flex; flex-direction: column; align-items: center; gap: 3px; }
     .bar { width: 26px; border-radius: 4px 4px 0 0; min-height: 2px; }
     .bar-in-color  { background: rgba(52,211,153,.55); }
     .bar-out-color { background: rgba(248,113,113,.55); }
     .bar-month { font-size: 10px; color: var(--text-muted); padding-top: 4px; }
-
-    /* ── Grid ── */
     .row2 { display: grid; grid-template-columns: 1fr 380px; gap: 20px; margin-top: 20px; }
-
-    /* ── Summary Cards ── */
     .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-    .sum-card {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px 18px;
-    }
+    .sum-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
     .sum-card-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
     .sum-card-val { font-family: 'Pretendard', sans-serif; font-size: 22px; font-weight: 500; }
-
-    /* ── Modal / Overlay ── */
     .overlay {
       position: fixed; inset: 0; z-index: 500;
-      background: rgba(0,0,0,.55);
-      backdrop-filter: blur(5px);
-      -webkit-backdrop-filter: blur(5px);
-      display: none; align-items: center; justify-content: center;
-      animation: fadeIn .18s ease;
+      background: rgba(0,0,0,.55); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+      display: none; align-items: center; justify-content: center; animation: fadeIn .18s ease;
     }
     .overlay.open { display: flex; }
     .modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 30px;
-      width: 480px;
-      max-width: 95vw;
-      max-height: 88vh;
-      overflow-y: auto;
-      animation: fadeUp .22s ease;
-      position: relative;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 30px; width: 480px;
+      max-width: 95vw; max-height: 88vh; overflow-y: auto;
+      animation: fadeUp .22s ease; position: relative;
     }
     .modal-lg { width: 720px; }
     .modal-sm { width: 380px; }
     @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
     @keyframes fadeUp  { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
-
     .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 22px; }
     .modal-close {
       position: absolute; top: 22px; right: 22px;
-      width: 30px; height: 30px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 15px; color: var(--text-muted);
-      transition: all .15s;
+      width: 30px; height: 30px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 15px; color: var(--text-muted); transition: all .15s;
     }
     .modal-close:hover { background: var(--surface3); color: var(--text); }
-
-    /* ── Form ── */
     .form-group { margin-bottom: 16px; }
-    .form-label {
-      display: block; font-size: 11px; font-weight: 600;
-      color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px;
-      margin-bottom: 6px;
-    }
-    .form-input, .form-select {
-      width: 100%; padding: 10px 14px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text); font-size: 14px;
-      outline: none; transition: border-color .2s;
-    }
+    .form-label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .form-input, .form-select { width: 100%; padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 14px; outline: none; transition: border-color .2s; }
     .form-input:focus, .form-select:focus { border-color: var(--blue); }
     .form-input::placeholder { color: var(--text-dim); }
-
-    /* ── Toggle ── */
-    .type-toggle {
-      display: flex; gap: 4px; padding: 4px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 11px;
-    }
-    .type-btn {
-      flex: 1; padding: 8px; border-radius: 7px;
-      border: none; font-size: 13px; font-weight: 600;
-      cursor: pointer; transition: all .18s;
-      color: var(--text-muted); background: none;
-    }
+    .type-toggle { display: flex; gap: 4px; padding: 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: 11px; }
+    .type-btn { flex: 1; padding: 8px; border-radius: 7px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .18s; color: var(--text-muted); background: none; }
     .type-btn.active-in  { background: rgba(52,211,153,.2);  color: var(--green); }
     .type-btn.active-out { background: rgba(248,113,113,.2); color: var(--red); }
-
-    /* ── Qty Control ── */
     .qty-row { display: flex; align-items: center; gap: 8px; }
-    .qty-btn {
-      width: 36px; height: 36px; border-radius: 9px;
-      border: 1px solid var(--border); background: var(--surface2);
-      color: var(--text); font-size: 18px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: all .15s; line-height: 1;
-    }
+    .qty-btn { width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; line-height: 1; }
     .qty-btn:hover { background: var(--surface3); }
-    .qty-input-big {
-      width: 80px; text-align: center;
-      font-family: 'Pretendard', sans-serif;
-      font-size: 20px; font-weight: 500;
-    }
+    .qty-input-big { width: 80px; text-align: center; font-family: 'Pretendard', sans-serif; font-size: 20px; font-weight: 500; }
     .presets { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
-    .preset-btn {
-      padding: 4px 13px; border-radius: 6px;
-      border: 1px solid var(--border); background: var(--surface2);
-      color: var(--text-muted); font-size: 12px; font-weight: 600;
-      cursor: pointer; font-family: 'Pretendard', sans-serif;
-      transition: all .15s;
-    }
+    .preset-btn { padding: 4px 13px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Pretendard', sans-serif; transition: all .15s; }
     .preset-btn:hover { border-color: var(--blue); color: var(--blue); }
-
-    /* ── Checkbox ── */
     .check-list { display: flex; flex-direction: column; gap: 11px; }
     .check-item { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; }
     .check-item input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; }
-
-    /* ── Quick Popup Stock Display ── */
-    .stock-display {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 11px; padding: 12px 16px;
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 18px;
-    }
+    .stock-display { background: var(--surface2); border: 1px solid var(--border); border-radius: 11px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
     .stock-display-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
     .stock-display-val { font-family: 'Pretendard', sans-serif; font-size: 22px; font-weight: 500; }
-
-    /* ── Detail Header ── */
-    .detail-head {
-      display: flex; align-items: flex-start;
-      justify-content: space-between; gap: 12px;
-      margin-bottom: 20px;
-    }
+    .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
     .detail-head-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-
-    /* ── Cat/Product Manager Items ── */
-    .mgr-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 9px 13px; border-radius: 9px;
-      border: 1px solid var(--border); margin-bottom: 7px;
-      transition: background .12s;
-    }
+    .mgr-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 13px; border-radius: 9px; border: 1px solid var(--border); margin-bottom: 7px; transition: background .12s; }
     .mgr-item:hover { background: var(--surface2); }
-    .mgr-del {
-      background: none; border: none; color: var(--text-muted);
-      cursor: pointer; font-size: 14px; padding: 3px 7px;
-      border-radius: 5px; transition: all .15s;
-    }
+    .mgr-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; padding: 3px 7px; border-radius: 5px; transition: all .15s; }
     .mgr-del:hover { background: rgba(248,113,113,.15); color: var(--red); }
-
-    /* ── Sortable Column ── */
     .sortable-col { cursor: pointer; user-select: none; }
     .sortable-col:hover { background: var(--surface3) !important; }
     .sort-indicator { font-size: 9px; margin-left: 3px; opacity: 0.8; }
-
-    /* ── Empty State ── */
-    .empty {
-      padding: 52px 24px; text-align: center;
-      color: var(--text-muted);
-    }
+    .empty { padding: 52px 24px; text-align: center; color: var(--text-muted); }
     .empty-icon { font-size: 44px; margin-bottom: 12px; }
     .empty-text { font-size: 14px; font-weight: 500; }
     .empty-sub  { font-size: 12px; margin-top: 6px; color: var(--text-dim); }
-
-    /* ── Divider ── */
     .divider { height: 1px; background: var(--border); margin: 16px 0; }
-
-    /* ── Toast ── */
-    .toast-wrap {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      z-index: 9999; display: flex; flex-direction: column; align-items: center; gap: 7px;
-    }
-    .toast {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px; padding: 11px 20px;
-      font-size: 13px; font-weight: 500;
-      box-shadow: 0 8px 30px var(--shadow);
-      animation: toastIn .25s ease;
-      white-space: nowrap;
-      color: var(--text);
-    }
+    .toast-wrap { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; align-items: center; gap: 7px; }
+    .toast { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 11px 20px; font-size: 13px; font-weight: 500; box-shadow: 0 8px 30px var(--shadow); animation: toastIn .25s ease; white-space: nowrap; color: var(--text); }
     .toast.ok  { border-color: rgba(52,211,153,.4); }
     .toast.err { border-color: rgba(248,113,113,.4); }
     @keyframes toastIn  { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
     @keyframes toastOut { from { opacity:1; transform: translateY(0); }   to { opacity:0; transform: translateY(10px); } }
-
     .num { font-family: 'Pretendard', sans-serif; }
-
-    /* ── Responsive ── */
-    @media (max-width: 900px) {
-      .row2 { grid-template-columns: 1fr; }
-      .summary-grid { grid-template-columns: 1fr 1fr; }
-    }
-
+    @media (max-width: 900px) { .row2 { grid-template-columns: 1fr; } .summary-grid { grid-template-columns: 1fr 1fr; } }
     @media (max-width: 768px) {
       body { font-size: 13px; }
-
-      /* Header */
       .header { padding: 0 14px; height: 56px; }
       .header-title { font-size: 15px; }
-      .header-subtitle { display: none; }
-      .date-badge { display: none; }
-      .sync-badge { display: none; }
-      .count-badge { display: none; }
+      .header-subtitle, .date-badge, .sync-badge, .count-badge { display: none; }
       .header-right { gap: 6px; }
       .header-right .btn { padding: 7px 10px; font-size: 12px; }
-
-      /* Main */
       .main { padding: 70px 12px 28px; }
-
-      /* Panel */
       .panel + .panel { margin-top: 14px; }
       .panel-head { padding: 14px 16px; flex-wrap: wrap; gap: 8px; }
       .row2 { gap: 14px; margin-top: 14px; }
-
-      /* Table */
       .table-wrap { -webkit-overflow-scrolling: touch; }
       thead th { padding: 9px 12px; font-size: 10px; }
       tbody td { padding: 11px 12px; }
-
-      /* Tab */
       .tab-bar { padding: 0 12px; }
       .tab-btn { padding: 11px 14px; font-size: 12px; }
       .tab-panel { padding: 16px 14px; }
-
-      /* Summary cards */
       .sum-card { padding: 12px 14px; }
       .sum-card-val { font-size: 18px; }
-
-      /* Detail modal 3-col → 2-col */
       #det-cards { grid-template-columns: 1fr 1fr !important; }
-
-      /* Modal */
       .modal { width: 92vw !important; padding: 22px 18px; border-radius: 16px; }
       .modal-title { font-size: 16px; margin-bottom: 16px; }
-
-      /* Empty state */
       .empty { padding: 36px 16px; }
       .empty-icon { font-size: 36px; }
-
-      /* Toast */
       .toast-wrap { bottom: 16px; }
       .toast { white-space: normal; text-align: center; max-width: 85vw; }
     }
   </style>
 </head>
-</head>
 <body>
 
-<!-- Loading Screen -->
 <div id="loadingScreen">
   <div class="loading-logo">NDS</div>
   <div class="loading-spinner"></div>
   <div class="loading-text">데이터 불러오는 중...</div>
 </div>
 
-<!-- ══════════════════════════════
-     HEADER
-══════════════════════════════ -->
 <header class="header">
   <div class="header-left">
     <div class="nds-logo">NDS</div>
@@ -665,8 +367,6 @@
       <table id="invTable">
         <thead>
           <tr>
-            <th id="th-name" class="sortable-col">상품명 <span class="sort-indicator" id="si-name"></span><button class="col-add" id="btnOpenProductMgr" title="상품 추가/삭제">＋</button></th>
-            <th id="th-cat" class="sortable-col">카테고리 <span class="sort-indicator" id="si-cat"></span><button class="col-add" id="btnOpenCatMgr" title="카테고리 관리">＋</button></th>
             <th id="th-name" class="sortable-col">상품명 <span class="sort-indicator" id="si-name"></span><button class="col-add" id="btnOpenProductMgr" title="상품 추가/삭제">＋</button></th>
             <th id="th-cat" class="sortable-col">카테고리 <span class="sort-indicator" id="si-cat"></span><button class="col-add" id="btnOpenCatMgr" title="카테고리 관리">＋</button></th>
             <th>현재 재고</th>
@@ -884,7 +584,6 @@
   </div>
 </div>
 
-
 <!-- ⑧ 입출고 수정 -->
 <div class="overlay" id="ov-editTx">
   <div class="modal">
@@ -932,9 +631,6 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════
-     FIREBASE SDK
-══════════════════════════════ -->
 <script type="module">
 import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
@@ -943,7 +639,6 @@ import {
   query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* ── Firebase Config ── */
 const firebaseConfig = {
   apiKey: "AIzaSyCkOPSsoW-Oy5cHlNxgyFomNhW0T0Pvs98",
   authDomain: "nds-inventory.firebaseapp.com",
@@ -958,17 +653,16 @@ const colProducts = collection(db, 'products');
 const colTxns     = collection(db, 'txns');
 const colCats     = collection(db, 'cats');
 
-/* ── State ── */
 let products = [], txns = [], cats = [];
 let theme    = localStorage.getItem('nds_theme') || 'dark';
 let txType   = 'in';
+let editTxId = null, editTxType = 'in';
 let quickProductId = null, quickType = 'in', detailId = null;
 let loaded = { products: false, txns: false, cats: false };
 let catsInitialized = false;
-let invSortKey = null; // 'name' | 'category' | null
+let invSortKey = null;
 let invSortDir = 'asc';
 
-/* ── Helpers ── */
 const $ = id => document.getElementById(id);
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -1002,18 +696,15 @@ function toast(msg, type='ok') {
   setTimeout(() => { el.style.animation='toastOut .25s ease forwards'; setTimeout(()=>el.remove(),260); }, 3000);
 }
 
-/* ── Modal ── */
 const openOv  = id => $(id).classList.add('open');
 const closeOv = id => $(id).classList.remove('open');
 const isOpen  = id => $(id).classList.contains('open');
 
-/* ── Sync ── */
 function setSyncStatus(online) {
   $('syncDot').className  = 'sync-dot' + (online ? '' : ' offline');
   $('syncText').textContent = online ? '실시간 연동 중' : '연결 끊김';
 }
 
-/* ── Loading ── */
 function checkLoaded() {
   if (!loaded.products || !loaded.txns || !loaded.cats) return;
   const ls = $('loadingScreen');
@@ -1021,22 +712,12 @@ function checkLoaded() {
   setTimeout(() => ls.style.display = 'none', 450);
 }
 
-/* ── Cat select helpers ── */
 const buildCatOptions = () => cats.map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
 const refreshCatSelects = () => {
   $('ap-cat').innerHTML   = buildCatOptions();
   $('pmgr-cat').innerHTML = buildCatOptions();
 };
 
-function updateSortIndicators() {
-  const siName = $('si-name'), siCat = $('si-cat');
-  if (siName) { siName.textContent = invSortKey==='name' ? (invSortDir==='asc'?'▲':'▼') : '↕'; siName.className = 'sort-indicator'+(invSortKey==='name'?' active':''); }
-  if (siCat)  { siCat.textContent  = invSortKey==='category' ? (invSortDir==='asc'?'▲':'▼') : '↕'; siCat.className  = 'sort-indicator'+(invSortKey==='category'?' active':''); }
-}
-
-/* ══════════════════════
-   RENDER
-══════════════════════ */
 function renderAll() {
   renderInv(); renderDaily(); renderMonthly(); renderSummary();
   $('countBadge').textContent = products.length + '개 상품';
@@ -1080,12 +761,12 @@ function renderInv() {
   }).join('');
 }
 
+/* ✅ 수정됨: el.innerHTML 중복 제거 */
 function renderDaily() {
   const el = $('dailyContent');
   if (!txns.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">입출고 기록이 없습니다</div></div>`; return; }
   const grouped = {};
   txns.forEach(t => { if(!grouped[t.date]) grouped[t.date]=[]; grouped[t.date].push(t); });
-  el.innerHTML = Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).slice(0,5).map(date => {
   el.innerHTML = Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).slice(0,5).map(date => {
     const rows = grouped[date].map(t => {
       const pName = (products.find(p=>p.id===t.productId)||{}).name||'(삭제된 상품)';
@@ -1209,9 +890,6 @@ function refreshDetail() {
     : `<tr><td colspan="4"><div class="empty"><div class="empty-text">입출고 기록이 없습니다</div></div></td></tr>`;
 }
 
-/* ══════════════════════
-   FIREBASE LISTENERS
-══════════════════════ */
 onSnapshot(query(colProducts,orderBy('createdAt')), snap => {
   products = snap.docs.map(d=>({id:d.id,...d.data()}));
   loaded.products = true; checkLoaded(); renderAll(); setSyncStatus(true);
@@ -1239,9 +917,6 @@ onSnapshot(colCats, snap => {
   if (isOpen('ov-addProduct')) refreshCatSelects();
 }, ()=>setSyncStatus(false));
 
-/* ══════════════════════
-   THEME & DATE
-══════════════════════ */
 function applyTheme(save_) {
   document.documentElement.setAttribute('data-theme', theme);
   $('themeBtn').textContent = theme==='dark'?'☀️':'🌙';
@@ -1250,15 +925,8 @@ function applyTheme(save_) {
 applyTheme(false);
 $('dateBadge').textContent = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
 
-/* ══════════════════════
-   EVENT LISTENERS
-   (모든 클릭 이벤트를 여기서 안전하게 등록)
-══════════════════════ */
-
-/* 테마 */
 $('themeBtn').addEventListener('click', ()=>{ theme=theme==='dark'?'light':'dark'; applyTheme(true); });
 
-/* 헤더 버튼 */
 $('btnOpenAddProduct').addEventListener('click', () => {
   $('ap-name').value=''; $('ap-stock').value='0';
   refreshCatSelects(); openOv('ov-addProduct');
@@ -1271,26 +939,11 @@ $('btnOpenAddTx').addEventListener('click', () => {
   setTxType('in'); openOv('ov-addTx');
 });
 $('btnOpenExcel').addEventListener('click', ()=>openOv('ov-excel'));
+
+/* ✅ 수정됨: 이벤트 중복 제거 - 각각 1번씩만 등록 */
 $('btnOpenProductMgr').addEventListener('click', e=>{ e.stopPropagation(); refreshCatSelects(); renderProductMgrList(); openOv('ov-productMgr'); setTimeout(()=>$('pmgr-name').focus(),120); });
 $('btnOpenCatMgr').addEventListener('click', e=>{ e.stopPropagation(); $('cat-new').value=''; renderCatList(); openOv('ov-catMgr'); setTimeout(()=>$('cat-new').focus(),120); });
 
-/* 재고 테이블 정렬 */
-$('th-name').addEventListener('click', e => {
-  if (e.target.closest('.col-add')) return;
-  if (invSortKey==='name') invSortDir = invSortDir==='asc'?'desc':'asc';
-  else { invSortKey='name'; invSortDir='asc'; }
-  renderInv();
-});
-$('th-cat').addEventListener('click', e => {
-  if (e.target.closest('.col-add')) return;
-  if (invSortKey==='category') invSortDir = invSortDir==='asc'?'desc':'asc';
-  else { invSortKey='category'; invSortDir='asc'; }
-  renderInv();
-});
-$('btnOpenProductMgr').addEventListener('click', e=>{ e.stopPropagation(); refreshCatSelects(); renderProductMgrList(); openOv('ov-productMgr'); setTimeout(()=>$('pmgr-name').focus(),120); });
-$('btnOpenCatMgr').addEventListener('click', e=>{ e.stopPropagation(); $('cat-new').value=''; renderCatList(); openOv('ov-catMgr'); setTimeout(()=>$('cat-new').focus(),120); });
-
-/* 재고 테이블 정렬 */
 $('th-name').addEventListener('click', e => {
   if (e.target.closest('.col-add')) return;
   if (invSortKey==='name') invSortDir = invSortDir==='asc'?'desc':'asc';
@@ -1304,7 +957,6 @@ $('th-cat').addEventListener('click', e => {
   renderInv();
 });
 
-/* 탭 */
 $('tab-daily').addEventListener('click',   ()=>switchTab('daily'));
 $('tab-monthly').addEventListener('click', ()=>switchTab('monthly'));
 function switchTab(tab) {
@@ -1314,18 +966,13 @@ function switchTab(tab) {
   });
 }
 
-/* data-close 버튼 일괄 처리 */
 document.addEventListener('click', e => {
   const closeTarget = e.target.closest('[data-close]');
   if (closeTarget) closeOv(closeTarget.dataset.close);
 });
-
-/* 오버레이 바깥 클릭으로 닫기 */
 document.addEventListener('click', e => {
   if (e.target.classList.contains('overlay')) closeOv(e.target.id);
 });
-
-/* 수량 버튼 일괄 처리 */
 document.addEventListener('click', e => {
   const deltaBtn = e.target.closest('[data-qty-delta]');
   if (deltaBtn) {
@@ -1336,7 +983,6 @@ document.addEventListener('click', e => {
   if (setBtn) $(setBtn.dataset.qtyTarget).value = setBtn.dataset.qtySet;
 });
 
-/* 입출고 구분 토글 */
 $('tx-in').addEventListener('click',  ()=>setTxType('in'));
 $('tx-out').addEventListener('click', ()=>setTxType('out'));
 function setTxType(t) {
@@ -1345,7 +991,6 @@ function setTxType(t) {
   $('tx-out').className = 'type-btn'+(t==='out'?' active-out':'');
 }
 
-/* 상품 추가 제출 */
 $('btnSubmitAddProduct').addEventListener('click', submitAddProduct);
 $('ap-name').addEventListener('keydown', e=>{ if(e.key==='Enter') submitAddProduct(); });
 async function submitAddProduct() {
@@ -1357,7 +1002,6 @@ async function submitAddProduct() {
   catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
 }
 
-/* 입출고 등록 */
 $('btnSubmitTx').addEventListener('click', submitTx);
 $('tx-note').addEventListener('keydown', e=>{ if(e.key==='Enter') submitTx(); });
 async function submitTx() {
@@ -1373,7 +1017,6 @@ async function submitTx() {
   } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
 }
 
-/* 빠른 입출고 */
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-qtype]');
   if (!btn) return;
@@ -1411,7 +1054,6 @@ async function submitQuick() {
   } catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
 }
 
-/* 상품 클릭 → 상세 */
 document.addEventListener('click', e => {
   const link = e.target.closest('.product-link');
   if (!link) return;
@@ -1419,7 +1061,6 @@ document.addEventListener('click', e => {
   refreshDetail(); openOv('ov-detail');
 });
 
-/* 입출고 기록 클릭 → 수정 (날짜별 현황 + 상품 상세 모달 공통) */
 function openEditTxById(txId) {
   const t = txns.find(x=>x.id===txId);
   if (!t) return;
@@ -1470,7 +1111,6 @@ $('btnDeleteTx').addEventListener('click', async () => {
   } catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
 });
 
-/* 상세 삭제 */
 $('btnDeleteFromDetail').addEventListener('click', async () => {
   if (!detailId) return;
   const p=products.find(x=>x.id===detailId);
@@ -1485,7 +1125,6 @@ $('btnDeleteFromDetail').addEventListener('click', async () => {
   } catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
 });
 
-/* 상세 엑셀 */
 $('btnProductExcel').addEventListener('click', () => {
   if (!detailId) return;
   const p=products.find(x=>x.id===detailId); if(!p) return;
@@ -1496,7 +1135,6 @@ $('btnProductExcel').addEventListener('click', () => {
   toast('엑셀 파일이 다운로드되었습니다.','ok');
 });
 
-/* 카테고리 추가 */
 $('btnAddCat').addEventListener('click', addCat);
 $('cat-new').addEventListener('keydown', e=>{ if(e.key==='Enter') addCat(); });
 async function addCat() {
@@ -1507,7 +1145,6 @@ async function addCat() {
   catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
 }
 
-/* 카테고리 삭제 (이벤트 위임) */
 $('catList').addEventListener('click', async e => {
   const btn=e.target.closest('[data-cat-id]'); if(!btn) return;
   const id=btn.dataset.catId, name=btn.dataset.catName;
@@ -1516,7 +1153,6 @@ $('catList').addEventListener('click', async e => {
   catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
 });
 
-/* 상품 관리 - 추가 */
 $('btnSubmitAddFromMgr').addEventListener('click', submitAddFromMgr);
 $('pmgr-name').addEventListener('keydown', e=>{ if(e.key==='Enter') submitAddFromMgr(); });
 async function submitAddFromMgr() {
@@ -1528,7 +1164,6 @@ async function submitAddFromMgr() {
   catch(e) { toast('저장 중 오류가 발생했습니다.','err'); }
 }
 
-/* 상품 관리 - 삭제 (이벤트 위임) */
 $('productMgrList').addEventListener('click', async e => {
   const btn=e.target.closest('[data-prod-id]'); if(!btn) return;
   const id=btn.dataset.prodId, name=btn.dataset.prodName;
@@ -1541,7 +1176,6 @@ $('productMgrList').addEventListener('click', async e => {
   } catch(e) { toast('삭제 중 오류가 발생했습니다.','err'); }
 });
 
-/* 전체 엑셀 */
 $('btnDoExcel').addEventListener('click', () => {
   const inc={name:$('xl-name').checked,cat:$('xl-cat').checked,stock:$('xl-stock').checked,tin:$('xl-in').checked,tout:$('xl-out').checked};
   if (!Object.values(inc).some(Boolean)) { toast('최소 하나 이상의 항목을 선택하세요.','err'); return; }
